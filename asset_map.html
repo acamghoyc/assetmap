@@ -929,6 +929,9 @@
     var serviceDataJSN;
 
     async function initMapData() {
+        // Load CSV data for zip codes
+        zipData = await loadCSVData('zipData.csv');
+
         // Get services first, because should be quick and painless
         try {
             console.log("Fetching Power Automate service data...");
@@ -1243,6 +1246,43 @@
                 valsa[idx] = val;
             });
         }
+
+        //Add adjacent zip codes
+        if (keysa.includes('zip')) {
+            // get the indices that match "zip"
+            let temp = 0
+            const zipIdx = keysa
+                .map((key, index) => key === 'zip' ? index : -1)
+                .filter(index => index !== -1);
+            //console.log(svcIdx);
+            //const allServices = urlParams.getAll('service');
+            zipIdx.forEach(idx => { // if abv found, replace with full service
+                var val = valsa[idx];
+                //var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
+                var match_row = zipData.find(item => item.ZCTA === val);
+                if (match_row != undefined) {
+                    var zipString = match_row.adjacent;
+                    zipString.split(',').forEach(zip => {
+                        keysa.push('zip');
+                        valsa.push(zip.trim());
+                    });
+                    //matchval = match.adjacent;
+                    //const queryString = zipString
+                    //.split(',')                          // Split into an array
+                    //.map(zip => `zip=${zip.trim()}`)     // Clean up spaces and format
+                    //.join('&');                          // Join with &
+                    //console.log(queryString);
+                    //temp = 0;
+
+                    // TODO: We should probably do it this way, but for use logicArg
+                    //keysa.push('logic');
+                    //valsa.push('or');
+                    logicArg = 'or';
+                }
+                //valsa[idx] = val;
+            });
+        }
+
         filterContentByMatch(keysa, valsa, logicArg);
     });
     //#endregion
@@ -1419,7 +1459,8 @@
         //zipsLayer.addTo(map);
         if (layerName == "Show Zip Codes") {
             if (zipShapes === null || zipShapes === undefined) {
-                zipData = await loadCSVData('zipData.csv');
+                // We need to load zipData by default
+                //zipData = await loadCSVData('zipData.csv');
                 //var scriptName = layerName.toLowerCase() + ".js";
                 //await loadGJSNScript(scriptName);
                 await loadGJSNScript('zipShapes.js');

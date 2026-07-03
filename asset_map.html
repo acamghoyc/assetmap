@@ -393,7 +393,7 @@
         }
     }
 
-    function waitForLayer(timeoutMs = 10000) {
+    function waitForLayer(timeoutMs = 20000) {
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
 
@@ -1215,11 +1215,59 @@
 
     //#region <!-- Functions to dynamically change layers
 
-    // logic should be either 'and' or 'or'
-    async function filterContentByMatch(targetKeya, targetValuea) {
-        if (targetKeya.length === 0) { return; }
+    async function filterContentByMatch(urlParams) {
+
+        const keysa = [...urlParams.keys()];
+        const valsa = [...urlParams.values()];
+        const ukeys = [...new Set(keysa)];
+
+        if (keysa.length === 0) { return; }
 
         content.clearLayers();
+
+        var zipCount = 0;
+        var serviceCount = 0;
+
+        //lets convert abbreviated services to full services
+        if (keysa.includes('service')) {
+            // get the indices that match "service"
+            let temp = 0
+            const svcIdx = keysa
+                .map((key, index) => key === 'service' ? index : -1)
+                .filter(index => index !== -1);
+            //console.log(svcIdx);
+            //const allServices = urlParams.getAll('service');
+            svcIdx.forEach(idx => { // if abv found, replace with full service
+                serviceCount++;
+                var val = valsa[idx];
+                var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
+                if (match_row != undefined) {
+                    var match = match_row.Service;
+                    val = match ? match : val;
+                }
+                valsa[idx] = val;
+            });
+        }
+        //Add adjacent zip codes
+        if (keysa.includes('zip')) {
+            // get the indices that match "zip"
+            let temp = 0
+            const zipIdx = keysa
+                .map((key, index) => key === 'zip' ? index : -1)
+                .filter(index => index !== -1);
+            zipIdx.forEach(idx => {
+                zipCount++;
+                var val = valsa[idx];
+                var match_row = zipData.find(item => item.ZCTA === val);
+                if (match_row != undefined) {
+                    var zipString = match_row.adjacent;
+                    zipString.split(',').forEach(zip => {
+                        keysa.push('zip');
+                        valsa.push(zip.trim());
+                    });
+                }
+            });
+        }
 
         // multiple zips will always be or
         // multiple services can be and or or
@@ -1235,37 +1283,28 @@
             let targetKey;
             let targetValue;
             let matches = 0;
-            for (let i = 0; i <= targetKeya.length; i++) {
-                targetKey = targetKeya[i];
+            for (let i = 0; i <= keysa.length; i++) {
+                targetKey = keysa[i];
                 if (targetKey == 'service') { targetKey = 'services'; }
                 const hasKey = Object.keys(properties).includes(targetKey);
                 if (hasKey) {
-                    targetValue = targetValuea[i];
+                    targetValue = valsa[i];
                     targetValue = decodeURIComponent(targetValue.replace(/\+/g, ' '));
                     targetValue = cleanString(targetValue);
-                    var vals = properties[targetKey];
+                    var vals = properties[targetKey]; //vals from layer, can be array if services
                     var safeVals = Array.isArray(vals) ? vals : [vals];
                     safeVals.forEach(element => {
-                        var val = element;
-                        val = cleanString(val);
+                        var cval = element;
+                        val = cleanString(cval);
                         if (val == targetValue) {
-                            if (logic == 'or') {
-                                console.log("Adding: ", targetKey, " - ", targetValue, " to content layer.")
-                                layer.addTo(content);
-                                layer._icon.classList.add('pulsating-icon');
-                            } else {
-                                matches++;
-                                //console.log("Match found: ", val, " - i: ", i, " - matches: ", matches);
-                            }
+                            matches++;
                         }
                     });
                 }
             }
-            if (logic == 'and') {
-                if (matches == targetKeya.length) {
-                    layer.addTo(content);
-                    layer._icon.classList.add('pulsating-icon');
-                }
+            if (matches >= ukeys.length) {
+                layer.addTo(content);
+                layer._icon.classList.add('pulsating-icon');
             }
         });
 
@@ -1308,81 +1347,15 @@
         //#region <!-- JS to process get/post -->
         // 2. Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
-        const keysa = [...urlParams.keys()];
-        const valsa = [...urlParams.values()];
-        //let's handle logic in filterContentByMatch 
-        //var logicArg = urlParams.get('logic');
-        ///urlParams.delete('logic');
-        //if (!logicArg) { logicArg = "and"; }
 
         try {
             // Make sure all data is loaded first
             console.log("Waiting for data stream...");
             await waitForLayer(); // 1. PAUSE right here until partnerDataLayer is fully built and loaded
             console.log("Data layer is confirmed ready. Processing features now.");
-            const totalFeatures = partnerDataLayer.getLayers().length;
-            console.log(`Successfully mapped ${totalFeatures} locations.`);
-
-            //lets convert abbreviated services to full services
-            if (keysa.includes('service')) {
-                // get the indices that match "service"
-                let temp = 0
-                const svcIdx = keysa
-                    .map((key, index) => key === 'service' ? index : -1)
-                    .filter(index => index !== -1);
-                //console.log(svcIdx);
-                //const allServices = urlParams.getAll('service');
-                svcIdx.forEach(idx => { // if abv found, replace with full service
-                    var val = valsa[idx];
-                    var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
-                    if (match_row != undefined) {
-                        var match = match_row.Service;
-                        val = match ? match : val;
-                    }
-                    valsa[idx] = val;
-                });
-            }
-
-            //Add adjacent zip codes
-            if (keysa.includes('zip')) {
-                // get the indices that match "zip"
-                let temp = 0
-                const zipIdx = keysa
-                    .map((key, index) => key === 'zip' ? index : -1)
-                    .filter(index => index !== -1);
-                //console.log(svcIdx);
-                //const allServices = urlParams.getAll('service');
-                zipIdx.forEach(idx => { // if abv found, replace with full service
-                    var val = valsa[idx];
-                    //var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
-                    var match_row = zipData.find(item => item.ZCTA === val);
-                    if (match_row != undefined) {
-                        var zipString = match_row.adjacent;
-                        zipString.split(',').forEach(zip => {
-                            keysa.push('zip');
-                            valsa.push(zip.trim());
-                        });
-                        //matchval = match.adjacent;
-                        //const queryString = zipString
-                        //.split(',')                          // Split into an array
-                        //.map(zip => `zip=${zip.trim()}`)     // Clean Up spaces and format
-                        //.join('&');                          // Join with &
-                        //console.log(queryString);
-                        //temp = 0;
-
-                        // TODO: We should probably do it this way, but for use logicArg
-                        //keysa.push('logic');
-                        //valsa.push('or');
-
-                        //let's handle logic in filterContentByMatch 
-                        //logicArg = 'or';
-                    }
-                    //valsa[idx] = val;
-                });
-            }
 
             setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
-            filterContentByMatch(keysa, valsa);
+            filterContentByMatch(urlParams);
         } catch (error) {
             console.error("Could not process map filters:", error.message);
         } finally {

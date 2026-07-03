@@ -356,6 +356,7 @@
             return isValid;
         }
 
+        //TODO: Enable select multiple services
         function submitQuiz() {
             const checkedServices = Array.from(document.querySelectorAll('input[name="services"]:checked'))
                 .map(cb => cb.value);

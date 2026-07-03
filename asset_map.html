@@ -1109,7 +1109,7 @@
                 var descriptionChunk = (item.Description && item.Description !== '0' && item.Description !== 0)
                     ? `\n${item.Description}\n`
                     : '';
-                var titleData = pointName + '\n' + item.FullAddress + '\n' + '<a href=?' + encodeURIComponent(item.PrimaryService) + '>' + item.PrimaryService + '</a>' + '\n' + descriptionChunk + '\n';
+                var titleData = pointName + '\n' + item.FullAddress + '\n' + '<a href=?service=' + encodeURIComponent(item.PrimaryService) + '>' + item.PrimaryService + '</a>' + '\n' + descriptionChunk + '\n';
                 // var titleData = `
                 //     <strong>${pointName}</strong><br>
                 //     ${item.FullAddress}<br>

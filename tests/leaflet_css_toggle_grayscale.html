@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Toggle Grayscale</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style>
+        /* Brute force grayscale style 
+        .leaflet-tile-container {
+            filter: grayscale(100%);
+            -webkit-filter: grayscale(100%);    
+        }
+        */
+
+        /* 1. DEFINE LIGHT MODE VARIABLES (DEFAULT) */
+        :root {
+            --bg-primary: #ffffff;
+            --text-primary: #1a1a1a;
+            --accent-color: #3b82f6;
+            --card-bg: #f3f4f6;
+        }
+
+        /* 2. DEFINE DARK MODE VARIABLES (WHEN CHECKED) */
+        /* The '~' combinator tells CSS: "find the .content container that comes after the checked box" */
+        .toggle-checkbox:checked~.content {
+            --bg-primary: #121212;
+            --text-primary: #f9fafb;
+            --accent-color: #60a5fa;
+            --card-bg: #1e1e1e;
+
+            .leaflet-tile-container {
+                filter: grayscale(100%);
+                -webkit-filter: grayscale(100%);
+            }
+        }
+
+        /* 3. APPLY VARIABLES TO GLOBAL ELEMENTS */
+        .content {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            /* Smooth fade effect */
+        }
+
+        .cta-btn {
+            background-color: var(--accent-color);
+            color: var(--bg-primary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* 4. THE TOGGLE SWITCH STYLING */
+        .theme-wrapper {
+            position: relative;
+        }
+
+        /* Hide the actual ugly checkbox */
+        .toggle-checkbox {
+            opacity: 0;
+            position: absolute;
+        }
+
+        /* Toggle track */
+        .toggle-label {
+            background-color: #111827;
+            /* Dark track by default */
+            width: 60px;
+            height: 30px;
+            border-radius: 50px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        /* Moving inner ball */
+        .toggle-ball {
+            background-color: #fff;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            transition: transform 0.2s linear;
+        }
+
+        /* Move the ball to the right side when checked */
+        .toggle-checkbox:checked+.toggle-label .toggle-ball {
+            transform: translateX(30px);
+        }
+
+        /* Change toggle track color based on mode */
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #e5e7eb;
+        }
+
+        .toggle-checkbox:checked+.toggle-label .toggle-ball {
+            background-color: #f59e0b;
+            /* Makes the ball look yellow/sun-like in dark mode */
+        }
+    </style>
+
+
+</head>
+
+<body>
+
+    <div class="theme-wrapper">
+        <input type="checkbox" id="theme-toggle" class="toggle-checkbox">
+        <label for="theme-toggle" class="toggle-label">
+            <span class="toggle-ball"></span>
+        </label>
+
+        <!-- The actual webpage content inside a sibling container -->
+        <main class="content">
+            <h1>Dynamic Theme Switcher</h1>
+            <p>This entire page changes color without a single line of JavaScript!</p>
+            <button class="cta-btn">Click Me</button>
+
+            <!-- TEST: Toggle Greyscale -->
+            <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="slider"></span>
+            </label>
+            <div id="map" style="width: 600px; height: 400px;"></div>
+        </main>
+    </div>
+    <script>
+        var map = L.map('map').setView([51.505, -0.09], 13);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+    </script>
+
+</body>
+
+</html>

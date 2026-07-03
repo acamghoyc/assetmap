@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Tutorials - Leaflet/JS</title>
+
+
+</head>
+
+<body>
+
+    POWER AUTOMATE TO JSON TEST
+
+</body>
+
+<script>
+
+    //#region <!-- Collect  data from Sharepoint -->
+    // Power Automate Request
+    var FLOW_URL =
+        "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d48e7d02cb33470490ae3e4aab69b11b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=JskPHZpzvA9NZMdDpni5WMVXMv4eaBrEXlOlGDmZARg";
+
+    var serviceDataGJSN = {
+        type: "FeatureCollection",
+        features: []
+    };
+
+    let serviceDataLayer;
+    let serviceList = [];
+
+    async function initData() {
+        try {
+            console.log("Fetching Power Automate flow data...");
+            var serviceDataJSN;
+            var serviceDataJSNstr = sessionStorage.getItem('serviceDataJSNstr'); // try to get cached data
+            const forceUpdate = false;
+            if (!serviceDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
+                // PAUSE here until the HTTP request finishes downloading
+                const response = await fetch(FLOW_URL);
+                // PAUSE here until the data stream completely parses into JSON format
+                serviceDataJSN = await response.json();
+                sessionStorage.setItem('serviceDataJSNstr', JSON.stringify(serviceDataJSN));
+            } else {
+                serviceDataJSN = JSON.parse(serviceDataJSNstr);
+            }
+
+            // Debugging Step: See exactly what Power Automate is handing you!
+            console.log("Data successfully loaded! Parsing features...", serviceDataJSN);
+        } catch (error) {
+            console.error("Critical error fetching or processing Power Automate flow data:", error);
+        }
+
+        serviceDataJSN.forEach(element => {
+            //console.log("Test: ", element);
+            console.log("Service: ", element.Service);
+            console.log(" ServiceCategory: ", element.ServiceCategory);
+            console.log(" Definition: ", element.Definition);
+        });
+
+        console.log("Data collected...");
+    }
+
+    initData();
+
+</script>
+
+</html>

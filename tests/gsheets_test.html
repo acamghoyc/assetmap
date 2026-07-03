@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Google Sheets TEST</title>
+
+
+</head>
+
+<body>
+
+    <h1>Google Sheets TEST</h1>
+
+    <script>
+
+        const sheetId = '1P23XSe8-dfZNQ6etsWpoVu6IzjyP3R5Kd36aSWHMo-4'; // Found in your sheet's URL
+        const sheetName = 'viz_types'; // Name of your specific tab
+        const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?sheet=${sheetName}`;
+
+        async function fetchSheetData() {
+            try {
+                const response = await fetch(url);
+                const data = await response.text();
+                console.log(data); // Returns sheet data in CSV format
+            } catch (error) {
+                console.error("Error fetching sheet:", error);
+            }
+        }
+        fetchSheetData();
+
+    </script>
+
+</body>
+
+</html>

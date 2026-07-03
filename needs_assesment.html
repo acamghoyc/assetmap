@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Finder Quiz</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .quiz-container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #1a1a1a;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: flex-start;
+            /* Aligns checkbox to the top of multi-line subtitles */
+            font-weight: normal;
+            cursor: pointer;
+            margin-bottom: 12px;
+            /* Adds space between different checkbox options */
+        }
+
+        .checkbox-label input {
+            margin-right: 12px;
+            margin-top: 3px;
+            /* Keeps the checkbox centered with the main title line */
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            /* Prevents the checkbox from squeezing/shrinking */
+        }
+
+        /* Container for the text strings */
+        .checkbox-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Main option heading */
+        .checkbox-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: #1a1a1a;
+        }
+
+        /* Muted descriptive subtitle */
+        .checkbox-subtitle {
+            font-size: 13px;
+            color: #6c757d;
+            /* Classic subtle gray color */
+            margin-top: 2px;
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-next {
+            background-color: #007bff;
+            color: white;
+            margin-left: auto;
+        }
+
+        .btn-next:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-prev {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .btn-prev:hover {
+            background-color: #5a6268;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        #result {
+            word-break: break-all;
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-top: 15px;
+        }
+
+        a.map-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 24px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        a.map-link:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="quiz-container">
+        <form id="quizForm" onsubmit="return false;">
+
+            <div class="step active" id="step1">
+                <h2>Where are you located?</h2>
+                <div class="form-group">
+                    <label for="zipcode">ZIP Code</label>
+                    <input type="text" id="zipcode" placeholder="e.g. 77002" maxlength="5" pattern="\d{5}"
+                        onkeydown="handleEnter(event, 1)">
+                    <div class=" error-message" id="zipError">Please enter a valid 5-digit ZIP code.
+                    </div>
+                </div>
+                <div class="btn-container">
+                    <button type="button" class="btn-next" onclick="nextStep(1)">Next</button>
+                </div>
+            </div>
+
+            <div class="step" id="step2">
+                <h2>Tell us a bit about yourself</h2>
+                <div class="form-group">
+                    <label for="age">What is your age?</label>
+                    <input type="number" id="age" placeholder="e.g. 25" min="0" max="120"
+                        onkeydown="handleEnter(event, 2)">
+                    <div class=" error-message" id="ageError">Please enter a valid age.</div>
+                    <div class="error-message" id="ageRangeError">
+                        GHOYC focuses on young people ages 13-24. Please check 311 for help
+                        <a href="https://my311.houstontx.gov/" target="_blank"
+                            rel="noopener noreferrer">https://my311.houstontx.gov/</a>
+                    </div>
+                </div>
+                <div class="btn-container">
+                    <button type="button" class="btn-prev" onclick="prevStep(2)">Back</button>
+                    <button type="button" class="btn-next" onclick="nextStep(2)">Next</button>
+                </div>
+            </div>
+
+            <div class="step" id="step3">
+                <div class="form-group">
+                    <label>Select all that apply:</label>
+                    <div class="checkbox-group" id="dynamicServices"></div>
+                    <div class="error-message" id="serviceError">Please select at least one service.</div>
+                </div>
+                <div class="btn-container">
+                    <button type="button" class="btn-prev" onclick="prevStep(3)">Back</button>
+                    <button type="button" class="btn-next" onclick="submitQuiz()"
+                        style="background-color: #28a745;">Generate
+                        Map Link</button>
+                </div>
+            </div>
+
+            <div class="step" id="step4">
+                <h2>Your Map is Ready!</h2>
+                <p>Click the link below to view your personalized service map application:</p>
+                <div id="result"></div>
+                <div id="linkContainer"></div>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+
+        //#region Helper Functions
+        function handleEnter(event, currentStep) {
+            // Check if the pressed key is 'Enter'
+            if (event.key === 'Enter') {
+                // Prevent the form from submitting/reloading the page
+                event.preventDefault();
+
+                // Trigger the next step progression
+                nextStep(currentStep);
+            }
+        }
+        //#endregion Helper Functions
+
+        //#region Get Services from Sharepoint and Render List
+        var SERVICE_FLOW_URL =
+            "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d48e7d02cb33470490ae3e4aab69b11b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=JskPHZpzvA9NZMdDpni5WMVXMv4eaBrEXlOlGDmZARg";
+
+        var serviceDataJSN;
+
+        async function initData() {
+            // Get services first, because should be quick and painless
+            try {
+                console.log("Fetching Power Automate service data...");
+                var serviceDataJSNstr = sessionStorage.getItem('serviceDataJSNstr'); // try to get cached data
+                const forceUpdate = false;
+                if (!serviceDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
+                    // PAUSE here until the HTTP request finishes downloading
+                    const response = await fetch(SERVICE_FLOW_URL);
+                    // PAUSE here until the data stream completely parses into JSON format
+                    serviceDataJSN = await response.json();
+                    sessionStorage.setItem('serviceDataJSNstr', JSON.stringify(serviceDataJSN));
+                } else {
+                    serviceDataJSN = JSON.parse(serviceDataJSNstr);
+                }
+                console.log("Service Data successfully loaded! Rendering Checkboxes...");
+                // Render the UI once data is safe and ready
+                renderServiceCheckboxes();
+                console.log("Checkboxes Rendered.");
+            } catch (error) {
+                console.error("Critical error fetching or processing Power Automate flow service data:", error);
+            }
+        }
+
+        function renderServiceCheckboxes() {
+            const container = document.getElementById('dynamicServices');
+
+            // Clear out any placeholder content first
+            container.innerHTML = '';
+
+            // Loop through each item in your JSON array
+            serviceDataJSN.forEach(item => {
+                // Create the structured HTML string using backticks
+                const checkboxHTML = `
+            <label class="checkbox-label">
+                <input type="checkbox" name="services" value="${item.Abbreviation}">
+                <div class="checkbox-text">
+                    <span class="checkbox-title">${item.Service}</span>
+                    <span class="checkbox-subtitle">${item.Definition || ''}</span>
+                </div>
+            </label>
+        `;
+
+                // Append the new element to the container
+                container.insertAdjacentHTML('beforeend', checkboxHTML);
+            });
+        }
+
+        //#endregion
+
+        //#region Base Code
+        // Configuration: Change this to your actual mapping application URL
+        const baseUrl = "http://127.0.0.1:5500/asset_map.html";
+
+        function nextStep(currentStep) {
+            if (validateStep(currentStep)) {
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                document.getElementById(`step${currentStep + 1}`).classList.add('active');
+            }
+        }
+
+        function prevStep(currentStep) {
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            document.getElementById(`step${currentStep - 1}`).classList.add('active');
+        }
+
+        function validateStep(step) {
+            let isValid = true;
+
+            if (step === 1) {
+                const zipInput = document.getElementById('zipcode').value;
+                const zipError = document.getElementById('zipError');
+                if (!/^\d{5}$/.test(zipInput)) {
+                    zipError.style.display = 'block';
+                    isValid = false;
+                } else {
+                    zipError.style.display = 'none';
+                }
+            }
+
+            if (step === 2) {
+                const ageInput = document.getElementById('age').value;
+                const ageError = document.getElementById('ageError');
+                if (ageInput === '' || ageInput < 0 || ageInput > 120) {
+                    ageError.style.display = 'block';
+                    isValid = false;
+                } else {
+                    ageError.style.display = 'none';
+                }
+                const ageRangeError = document.getElementById('ageRangeError');
+                if (ageInput < 13 || ageInput > 24) {
+                    ageRangeError.style.display = 'block';
+                    isValid = false;
+                } else {
+                    ageError.style.display = 'none';
+                }
+            }
+
+            return isValid;
+        }
+
+        function submitQuiz() {
+            const checkedServices = Array.from(document.querySelectorAll('input[name="services"]:checked'))
+                .map(cb => cb.value);
+            const serviceError = document.getElementById('serviceError');
+
+            if (checkedServices.length === 0) {
+                serviceError.style.display = 'block';
+                return;
+            } else {
+                serviceError.style.display = 'none';
+            }
+
+            // Gather all values
+            const zip = document.getElementById('zipcode').value;
+            const age = document.getElementById('age').value;
+
+            // Build URL parameters cleanly using URLSearchParams (handles encoding automatically)
+            const params = new URLSearchParams();
+            params.append('zip', zip);
+            //params.append('age', age);
+            params.append('logic', 'and');
+
+            // Commas separating values is standard, or you can append multiple identical keys
+            params.append('service', checkedServices.join(','));
+
+            const finalUrl = `${baseUrl}?${params.toString()}`;
+
+            // Update UI to display the URL
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('step4').classList.add('active');
+
+            document.getElementById('result').innerText = finalUrl;
+            document.getElementById('linkContainer').innerHTML = `
+            <a href="${finalUrl}" target="_blank" class="map-link">Open Interactive Map</a>
+        `;
+        }
+
+        //#endregion Base Code
+
+        //#region Run any functions needed to load data
+        initData();
+        //#endregioin Run any functions needed to load data
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Sharepoint TEST</title>
+
+    <script>
+
+        // const response = fetch(
+        //     "https://allian-my.sharepoint.com/:x:/g/personal/oycdata_acamweb_org/IQDdWtoaoUGZR65mtv4iwx8GAQ8L9Ua8QUsTruq7bZuYMww?e=fE8Keb"
+        // );
+        // console.log(response.headers.get("content-type"));
+
+        // ChatGPT Approach 1 - SharePoint REST API
+        // const siteUrl = "https://allian.sharepoint.com/sites/HealthCare/";
+        // const listName = "ZipCodes";
+
+        // fetch(
+        //     `${siteUrl}/_api/web/lists/getbytitle('${listName}')/items`,
+        //     {
+        //         headers: {
+        //             "Accept": "application/json;odata=nometadata"
+        //         },
+        //         credentials: "include"
+        //     }
+        // )
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         console.log(data.value);
+        //     })
+        //     .catch(error => console.error(error));
+
+        // console.log("ATTEMPTING ANONYMOUS API ENDPOINT")
+        // fetch(
+        //     "https://allian.sharepoint.com/sites/HealthCare/_api/web/lists/getbytitle('ZipCodes')/items?$select=Title",
+        //     {
+        //         headers: {
+        //             Accept: "application/json;odata=nometadata"
+        //         }
+        //     }
+        // )
+        //     .then(r => r.json())
+        //     .then(data => console.log(data.value));
+
+        // Power Automate Request
+        var FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ff82a7d67c2d4cd6910acfd25292bf33/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=dWBZIsS0c4S6almW4PQljf3U-89_AEREfeiy7IHTArc";
+
+        fetch(FLOW_URL)
+            .then(r => r.json())
+            .then(data => {
+
+                const columnsToRemove = [
+                    "@odata.etag",
+                    "ItemInternalId",
+                    "ID",
+                    "{Identifier}",
+                    "{IsFolder}",
+                    "{Thumbnail}",
+                    "{Link}",
+                    "{Name}",
+                    "{FilenameWithExtension}",
+                    "{Path}",
+                    "{FullPath}",
+                    "{ContentType}",
+                    "{ContentType}#Id",
+                    "{HasAttachments}",
+                    "{VersionNumber}"
+                ];
+
+                const headers = Object.keys(data.items[0])
+                    .filter(key => !columnsToRemove.includes(key));
+
+                const partnerData = [
+                    headers,
+                    ...data.items.map(item =>
+                        headers.map(header => item[header])
+                    )
+                ];
+
+                //console.log(partnerData);
+
+                //const nameIndex = partnerData[0].indexOf("Organization");
+                const nameIndex = partnerData[0].indexOf("Title"); //sharepoint changed this to Title
+                const addressIndex = partnerData[0].indexOf("FullAddress");
+                const latIndex = partnerData[0].indexOf("Lat");
+                const lonIndex = partnerData[0].indexOf("Lon");
+
+                // 1. Initialize the core GeoJSON structure
+                const geoJson = {
+                    type: "FeatureCollection",
+                    features: []
+                };
+
+                for (let i = 1; i < partnerData.length; i++) {
+                    console.log(
+                        `Name: ${partnerData[i][nameIndex]}, Address: ${partnerData[i][addressIndex]}`
+                    );
+                    const row = partnerData[i];
+
+                    const lat = parseFloat(row[latIndex]);
+                    const lon = parseFloat(row[lonIndex]);
+
+                    // Skip rows that lack valid coordinate data to prevent map crashes
+                    if (isNaN(lat) || !lon) continue;
+
+                    const feature = {
+                        type: "Feature",
+                        geometry: {
+                            type: "Point",
+                            // CRITICAL: GeoJSON requires coordinates to be [Longitude, Latitude]
+                            coordinates: [lon, lat]
+                        },
+                        properties: {
+                            name: row[nameIndex],
+                            address: row[addressIndex]
+                        }
+                    };
+
+                    geoJson.features.push(feature);
+
+                }
+
+                console.log("Constructed GeoJSON Object:", geoJson);
+            });
+    </script>
+
+
+
+
+</head>
+
+<body>
+
+    <h1>Sharepoint TEST</h1>
+
+    <script>
+
+    </script>
+
+</body>
+
+</html>

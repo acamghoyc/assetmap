@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Layers Control Tutorial - Leaflet</title>
+
+    <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .leaflet-container {
+            height: 400px;
+            width: 600px;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* Brute force grayscale style */
+        /* .leaflet-tile-container {
+            filter: grayscale(100%);
+            -webkit-filter: grayscale(100%); /* Safari support*/
+        /*} */
+
+        /* Brute force Dark mode style */
+        .leaflet-layer,
+        .leaflet-control-zoom-in,
+        .leaflet-control-zoom-out,
+        /* .leaflet-control-attribution {
+            filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+        } */
+
+        /* START TOGGLE TEST */
+        /* Container sizing */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        /* Hide default browser checkbox */
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* The toggle track background */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            border-radius: 34px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* The sliding circle knob */
+        .slider::before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        /* TRACK CHANGED: When checkbox is checked, turn background green */
+        .toggle-switch input:checked+.slider {
+            background-color: #4CAF50;
+        }
+
+        /* KNOB CHANGED: Move knob to the right when checked */
+        .toggle-switch input:checked+.slider::before {
+            transform: translateX(24px);
+        }
+
+        /* END TOGGLE TEST */
+    </style>
+
+
+</head>
+
+<body>
+
+    <!-- TEST: Toggle Greyscale -->
+    <label class="toggle-switch">
+        <input type="checkbox">
+        <span class="slider"></span>
+    </label>
+
+    <div id='map'></div>
+
+    <script>
+        const cities = L.layerGroup();
+        const mLittleton = L.marker([39.61, -105.02]).bindPopup('This is Littleton, CO.').addTo(cities);
+        const mDenver = L.marker([39.74, -104.99]).bindPopup('This is Denver, CO.').addTo(cities);
+        const mAurora = L.marker([39.73, -104.8]).bindPopup('This is Aurora, CO.').addTo(cities);
+        const mGolden = L.marker([39.77, -105.23]).bindPopup('This is Golden, CO.').addTo(cities);
+
+        const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        });
+
+        const osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
+        });
+
+        const osmTEST1 = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
+        });
+        const osmTEST2 = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
+        });
+        const osmTEST3 = L.tileLayer('https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
+        });
+
+
+        const map = L.map('map', {
+            center: [39.73, -104.99],
+            zoom: 10,
+            layers: [osm, cities]
+        });
+
+        const baseLayers = {
+            'OpenStreetMap': osm
+            , 'OpenStreetMap.HOT': osmHOT
+            , 'OpenStreetMap.TEST1': osmTEST1
+            , 'OpenStreetMap.TEST2': osmTEST2
+            , 'OpenStreetMap.TEST3': osmTEST3
+        };
+
+        const overlays = {
+            'Cities': cities
+        };
+
+        const layerControl = L.control.layers(baseLayers, overlays).addTo(map);
+
+        var greenIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+        var orangeIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+        var blackIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-black.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+
+        //const crownHill = L.marker([39.75, -105.09]).bindPopup('This is Crown Hill Park.');
+        //const rubyHill = L.marker([39.68, -105.00]).bindPopup('This is Ruby Hill Park.');
+        const crownHill = L.marker([39.75, -105.09], { icon: greenIcon }).bindPopup('This is Crown Hill Park.');
+        const rubyHill = L.marker([39.68, -105.00], { icon: greenIcon }).bindPopup('This is Ruby Hill Park.');
+        const mTest = L.marker([39.79, -105.25], { icon: orangeIcon }).bindPopup('This is a TEST.');
+
+        var parks = L.layerGroup([crownHill, rubyHill, mTest]);
+        mTest.addTo(cities);
+
+        const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        });
+        layerControl.addBaseLayer(openTopoMap, 'OpenTopoMap');
+        layerControl.addOverlay(parks, 'Parks');
+
+        L.Control.Watermark = L.Control.extend({
+            onAdd: function (map) {
+                var img = L.DomUtil.create('img');
+
+                img.src = './img/OYCACAM.webp';
+                img.style.width = '200px';
+
+                return img;
+            },
+
+            onRemove: function (map) {
+                // Nothing to do here
+            }
+        });
+
+        L.control.watermark = function (opts) {
+            return new L.Control.Watermark(opts);
+        }
+
+        L.control.watermark({ position: 'bottomleft' }).addTo(map);
+
+        // TRY TO ADD ITEM TO MULTIPLE LAYER GROUPS
+        const markerA = L.marker([39.90, -105.25], { icon: blackIcon }).bindPopup('This is markerA.');
+        const markerB = L.marker([39.79, -105.20], { icon: blackIcon }).bindPopup('This is markerB.');
+        const markerC = L.marker([39.79, -105.11], { icon: blackIcon }).bindPopup('This is markerC.');
+        // "Dummy" layers to be used in selection control
+        var dummy1 = L.layerGroup();
+        var dummy2 = L.layerGroup();
+        var clear = L.layerGroup();
+        // Actual categories with possibly common Markers
+        var category1 = L.layerGroup([markerA, markerB]);
+        var category2 = L.layerGroup([markerA, markerC]);
+        // Intermediate group to easily clear map content
+        var content = L.layerGroup().addTo(map);
+        //layerControl.addOverlay(content, 'Content');
+        layerControl.addOverlay(dummy1, 'Dummy1');
+        layerControl.addOverlay(dummy2, 'Dummy2');
+        layerControl.addOverlay(clear, 'Clear');
+
+        //markerA.addTo(dummy1);
+        //markerA.addTo(dummy2);
+        //markerA.addTo(category1);
+        //markerA.addTo(category2);
+
+        //markerA.addTo(content);
+        //markerB.addTo(content);
+
+        // This is probably a kind of hacky solution, beware it might not work on all browsers
+        function uncheckAllOverlays() {
+            var checkboxes = document.querySelectorAll('.leaflet-control-layers-overlays input[type="checkbox"]');
+            checkboxes.forEach(function (checkbox) {
+                checkbox.checked = false;
+            });
+        }
+
+        map.on("overlayadd overlayremove", function (event) {
+            // Step 1: remove all content
+            content.clearLayers();
+            // Step 2: re-add layers that fit at least one selection
+            if (event.name == "Clear") {
+                console.log("This should uncheck all boxes...");
+                uncheckAllOverlays();
+            } else {
+                if (map.hasLayer(dummy1)) {
+                    category1.addTo(content)
+                }
+                if (map.hasLayer(dummy2)) {
+                    category2.addTo(content)
+                }
+            }
+
+            // etc.
+            console.log("Layer was checked:", event.layer);
+            console.log("Layer name in control:", event.name);
+        });
+
+    </script>
+
+</body>
+
+</html>

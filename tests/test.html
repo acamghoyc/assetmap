@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>GHOYC Asset Map</title> <!-- Currently Empty CSS file -->
+    <link rel="stylesheet" href="styles.css"> <!-- Unknown JS -->
+    <!-- <script type='text/javascript' src='https://leafletjs.com/RB5iLpnAiGagjYOu2YU0lkCSGqp8bGOT8sgqCJ_tsa9_9wG-5GiBbIH5BAxqeSmZCdjZEnKCztY7MaolgzeE25snzM6SfgxAKdCSoGYSzsynoLI6xrex_zZOdnBXyEhENzE4fjNn3cPQDV3O9PopyrWOIu6TAPVD0q6k96ovm5nq8yZyuDKx80KCKixgg3Cw-PcHKviqJwf2QWurfoj9KwylvZb91XkK_XJNLyVxAqOBMZGliqz39cZUjwznSsTxisF8NeMj8CDHIvwWTkifB-K9h--0QkfDci_AOKVw5hV3Dz4DquAnTmej5UMp2DV_c-mHxZ6_BLVyDPMUCWS_mO7yefLPqTZf337ROD57TwajecJunG5xq5Z1e-282aqBI0IkjMBOJVIBzQ5esIpmRx6Q8QA2qyvZzdbSH6HcQOlMuABQvm-BxTorbmcOqzy4W33K-X0TbX6lLHG-viEMQywSqKIJF-87z_wihm9yLA'></script> -->
+    <!-- meta settings for mobile, take up whole screen -->
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Include Leaflet JavaScript file -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Style settings for mobile, take up whole screen -->
+    <style>
+        html,
+        body {
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+
+        #map {
+            /* height: 100%; */
+            height: 75vh;
+            width: 97vw;
+        }
+
+        /* .leaflet-container {
+            height: 400px;
+            width: 600px;
+        max-width: 100%;
+            max-height: 100%;
+        } */
+    </style>
+
+    <!-- Style settings for grayscale toggle -->
+    <style>
+        /* Brute force grayscale style .leaflet-tile-container { filter: grayscale(100%); -webkit-filter: grayscale(100%); } */
+        /* 1. DEFINE LIGHT MODE VARIABLES (DEFAULT) */
+        :root {
+            --bg-primary: #ffffff;
+            --text-primary: #1a1a1a;
+            --accent-color: #3b82f6;
+            --card-bg: #f3f4f6;
+        }
+
+        /* 2. DEFINE DARK MODE VARIABLES (WHEN CHECKED) */
+        /* The '~' combinator tells CSS: "find the .content container that comes after the checked box" */
+        .toggle-checkbox:checked~.content {
+            --bg-primary: #121212;
+            --text-primary: #f9fafb;
+            --accent-color: #60a5fa;
+            --card-bg: #1e1e1e;
+
+            .leaflet-tile-container {
+                filter: grayscale(100%);
+                -webkit-filter: grayscale(100%);
+            }
+        }
+
+        /* 3. APPLY VARIABLES TO GLOBAL ELEMENTS */
+        .content {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            /* min-height: 100vh; */
+            /* padding: 2rem; */
+            padding: 1rem;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            /* Smooth fade effect */
+        }
+
+        .cta-btn {
+            background-color: var(--accent-color);
+            color: var(--bg-primary);
+            border: none;
+            /* padding: 10px 20px; */
+            /* border-radius: 6px; */
+            cursor: pointer;
+        }
+
+        /* 4. THE TOGGLE SWITCH STYLING */
+        .theme-wrapper {
+            position: relative;
+        }
+
+        /* Hide the actual ugly checkbox */
+        .toggle-checkbox {
+            opacity: 0;
+            position: absolute;
+        }
+
+        /* Toggle track */
+        .toggle-label {
+            background-color: #111827;
+            /* Dark track by default */
+            /* width: 60px; height: 30px; border-radius: 50px; */
+            width: 40px;
+            height: 20px;
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            /* padding: 5px; */
+            cursor: pointer;
+        }
+
+        /* Moving inner ball */
+        .toggle-ball {
+            background-color: #fff;
+            /* width: 22px; height: 22px; */
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            transition: transform 0.2s linear;
+        }
+
+        /* Move the ball to the right side when checked */
+        .toggle-checkbox:checked+.toggle-label .toggle-ball {
+            transform: translateX(20px);
+        }
+
+        /* Change toggle track color based on mode */
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #e5e7eb;
+        }
+
+        .toggle-checkbox:checked+.toggle-label .toggle-ball {
+            background-color: #f59e0b;
+            /* Makes the ball look yellow/sun-like in dark mode */
+        }
+    </style>
+
+    <!-- Style settings for tabs-->
+    <style>
+        /* Style the tab */
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+        }
+
+        /* Style the buttons that are used to open the tab content */
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+        }
+
+        /* Change background color of buttons on hover */
+        .tab button:hover {
+            background-color: #ddd;
+        }
+
+        /* Create an active/current tablink class */
+        .tab button.active {
+            background-color: #ccc;
+        }
+
+        /* Style the tab content */
+        .tabcontent {
+            display: none;
+            /* padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none; */
+            /* Fading effect takes 1 second */
+            animation: fadeEffect 1s;
+            /* height: 100% */
+        }
+
+        /* Go from zero to full opacity */
+        @keyframes fadeEffect {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div id="map"></div>
+
+
+    <!-- GET PARNER DATA FROM GEOJSON-->
+    <script src="partners-geojson.js" type="text/javascript"></script>
+    <!-- TEST GEOJSON-->
+    <script src="sample-geojson.js" type="text/javascript"></script>
+
+    <script>
+
+        // <!-- Map Script -->
+
+        var map = L.map('map').setView([29.760, -95.370], 9);
+        // const map = L.map('map').setView([39.74739, -105], 13); // Denver
+
+
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+
+        var geojsonFeature = {
+            "type": "Feature",
+            "properties": {
+                "name": "Coors Field",
+                "amenity": "Baseball Stadium",
+                "popupContent": "This is where the Rockies play!"
+            },
+            "geometry": {
+                "type": "Point",
+                "coordinates": [-95.4679364, 29.7640238]
+            }
+        };
+
+        L.geoJSON(geojsonFeature).addTo(map);
+
+
+
+    </script>
+
+</body>
+
+</html>

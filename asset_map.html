@@ -35,6 +35,63 @@
             width: 97vw;
         }
 
+        .loading-notice {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+
+        .loading-notice.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loading-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 0.85rem;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2);
+            color: #0f172a;
+            min-width: min(90vw, 320px);
+        }
+
+        .loading-spinner {
+            width: 42px;
+            height: 42px;
+            border: 4px solid rgba(59, 130, 246, 0.25);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            flex-shrink: 0;
+        }
+
+        .loading-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .loading-subtitle {
+            font-size: 0.92rem;
+            color: #475569;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         /* .leaflet-container {
             height: 400px;
             width: 600px;
@@ -207,6 +264,15 @@
 <!-- Greyscale Toggle HTML -->
 
 <!-- Tabs -->
+<div id="loadingNotice" class="loading-notice" role="status" aria-live="polite">
+    <div class="loading-card">
+        <div class="loading-spinner"></div>
+        <div class="loading-copy">
+            <div class="loading-title">Loading map data</div>
+            <div class="loading-subtitle">Fetching locations and services…</div>
+        </div>
+    </div>
+</div>
 <main class="content">
     <!-- Tab links -->
     <div class="tab">
@@ -251,6 +317,32 @@
 <script defer>
 
     //#region <!-- Utility functions -->
+
+    const loadingNotice = document.getElementById('loadingNotice');
+
+    function showLoadingNotice(title = 'Loading map data', subtitle = 'Fetching locations and services…') {
+        if (!loadingNotice) return;
+        const titleEl = loadingNotice.querySelector('.loading-title');
+        const subtitleEl = loadingNotice.querySelector('.loading-subtitle');
+
+        if (titleEl) titleEl.textContent = title;
+        if (subtitleEl) subtitleEl.textContent = subtitle;
+        loadingNotice.classList.remove('is-hidden');
+    }
+
+    function setLoadingNoticeMessage(title, subtitle) {
+        if (!loadingNotice) return;
+        const titleEl = loadingNotice.querySelector('.loading-title');
+        const subtitleEl = loadingNotice.querySelector('.loading-subtitle');
+
+        if (titleEl && title) titleEl.textContent = title;
+        if (subtitleEl && subtitle) subtitleEl.textContent = subtitle;
+    }
+
+    function hideLoadingNotice() {
+        if (!loadingNotice) return;
+        loadingNotice.classList.add('is-hidden');
+    }
 
     function loadCSVData(filePath) {
         return new Promise((resolve, reject) => {
@@ -1124,15 +1216,20 @@
     //#region <!-- Functions to dynamically change layers
 
     // logic should be either 'and' or 'or'
-    async function filterContentByMatch(targetKeya, targetValuea, logic) {
+    async function filterContentByMatch(targetKeya, targetValuea) {
         if (targetKeya.length === 0) { return; }
-        if (!logic) {
-            logic = 'and';
-        }
 
         content.clearLayers();
 
+        // multiple zips will always be or
+        // multiple services can be and or or
+        /// most of the time, multiple services will be or
+        // there should not be multiple providers
+        // if provider is specified, then it should override other filters
+        // service + zip should always be and
+
         console.log("Processing map filters...");
+        
         partnerDataLayer.eachLayer(function (layer) {
             const properties = layer.feature.properties;
             let targetKey;
@@ -1206,84 +1303,91 @@
     });
     window.addEventListener('load', async (event) => {
         console.log('The page and all resources have fully loaded!'); //Not true
+        showLoadingNotice('Loading map data', 'Fetching locations and services…');
 
         //#region <!-- JS to process get/post -->
         // 2. Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
-        var logicArg = urlParams.get('logic');
-        urlParams.delete('logic');
         const keysa = [...urlParams.keys()];
         const valsa = [...urlParams.values()];
-        if (!logicArg) { logicArg = "and"; }
+        //let's handle logic in filterContentByMatch 
+        //var logicArg = urlParams.get('logic');
+        ///urlParams.delete('logic');
+        //if (!logicArg) { logicArg = "and"; }
 
-        // Make sure all data is loaded first
         try {
+            // Make sure all data is loaded first
             console.log("Waiting for data stream...");
             await waitForLayer(); // 1. PAUSE right here until partnerDataLayer is fully built and loaded
             console.log("Data layer is confirmed ready. Processing features now.");
             const totalFeatures = partnerDataLayer.getLayers().length;
             console.log(`Successfully mapped ${totalFeatures} locations.`);
+
+            //lets convert abbreviated services to full services
+            if (keysa.includes('service')) {
+                // get the indices that match "service"
+                let temp = 0
+                const svcIdx = keysa
+                    .map((key, index) => key === 'service' ? index : -1)
+                    .filter(index => index !== -1);
+                //console.log(svcIdx);
+                //const allServices = urlParams.getAll('service');
+                svcIdx.forEach(idx => { // if abv found, replace with full service
+                    var val = valsa[idx];
+                    var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
+                    if (match_row != undefined) {
+                        var match = match_row.Service;
+                        val = match ? match : val;
+                    }
+                    valsa[idx] = val;
+                });
+            }
+
+            //Add adjacent zip codes
+            if (keysa.includes('zip')) {
+                // get the indices that match "zip"
+                let temp = 0
+                const zipIdx = keysa
+                    .map((key, index) => key === 'zip' ? index : -1)
+                    .filter(index => index !== -1);
+                //console.log(svcIdx);
+                //const allServices = urlParams.getAll('service');
+                zipIdx.forEach(idx => { // if abv found, replace with full service
+                    var val = valsa[idx];
+                    //var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
+                    var match_row = zipData.find(item => item.ZCTA === val);
+                    if (match_row != undefined) {
+                        var zipString = match_row.adjacent;
+                        zipString.split(',').forEach(zip => {
+                            keysa.push('zip');
+                            valsa.push(zip.trim());
+                        });
+                        //matchval = match.adjacent;
+                        //const queryString = zipString
+                        //.split(',')                          // Split into an array
+                        //.map(zip => `zip=${zip.trim()}`)     // Clean Up spaces and format
+                        //.join('&');                          // Join with &
+                        //console.log(queryString);
+                        //temp = 0;
+
+                        // TODO: We should probably do it this way, but for use logicArg
+                        //keysa.push('logic');
+                        //valsa.push('or');
+
+                        //let's handle logic in filterContentByMatch 
+                        //logicArg = 'or';
+                    }
+                    //valsa[idx] = val;
+                });
+            }
+
+            setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
+            filterContentByMatch(keysa, valsa);
         } catch (error) {
             console.error("Could not process map filters:", error.message);
+        } finally {
+            hideLoadingNotice();
         }
-
-        //lets convert abbreviated services to full services
-        if (keysa.includes('service')) {
-            // get the indices that match "service"
-            let temp = 0
-            const svcIdx = keysa
-                .map((key, index) => key === 'service' ? index : -1)
-                .filter(index => index !== -1);
-            //console.log(svcIdx);
-            //const allServices = urlParams.getAll('service');
-            svcIdx.forEach(idx => { // if abv found, replace with full service
-                var val = valsa[idx];
-                var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
-                if (match_row != undefined) {
-                    var match = match_row.Service;
-                    val = match ? match : val;
-                }
-                valsa[idx] = val;
-            });
-        }
-
-        //Add adjacent zip codes
-        if (keysa.includes('zip')) {
-            // get the indices that match "zip"
-            let temp = 0
-            const zipIdx = keysa
-                .map((key, index) => key === 'zip' ? index : -1)
-                .filter(index => index !== -1);
-            //console.log(svcIdx);
-            //const allServices = urlParams.getAll('service');
-            zipIdx.forEach(idx => { // if abv found, replace with full service
-                var val = valsa[idx];
-                //var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
-                var match_row = zipData.find(item => item.ZCTA === val);
-                if (match_row != undefined) {
-                    var zipString = match_row.adjacent;
-                    zipString.split(',').forEach(zip => {
-                        keysa.push('zip');
-                        valsa.push(zip.trim());
-                    });
-                    //matchval = match.adjacent;
-                    //const queryString = zipString
-                    //.split(',')                          // Split into an array
-                    //.map(zip => `zip=${zip.trim()}`)     // Clean up spaces and format
-                    //.join('&');                          // Join with &
-                    //console.log(queryString);
-                    //temp = 0;
-
-                    // TODO: We should probably do it this way, but for use logicArg
-                    //keysa.push('logic');
-                    //valsa.push('or');
-                    logicArg = 'or';
-                }
-                //valsa[idx] = val;
-            });
-        }
-
-        filterContentByMatch(keysa, valsa, logicArg);
     });
     //#endregion
 

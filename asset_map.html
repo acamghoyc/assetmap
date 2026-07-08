@@ -103,25 +103,27 @@
     <!-- Style settings for grayscale toggle -->
     <style>
         /* Brute force grayscale style .leaflet-tile-container { filter: grayscale(100%); -webkit-filter: grayscale(100%); } */
-        /* 1. DEFINE LIGHT MODE VARIABLES (DEFAULT) */
-        :root {
+        /* 1. DEFINE LIGHT MODE VARIABLES (WHEN CHECKED) */
+        /* :root {  */
+        .toggle-checkbox:checked~.content {
             --bg-primary: #ffffff;
             --text-primary: #1a1a1a;
             --accent-color: #3b82f6;
             --card-bg: #f3f4f6;
         }
 
-        /* 2. DEFINE DARK MODE VARIABLES (WHEN CHECKED) */
+        /* 2. DEFINE DARK MODE VARIABLES (DEFAULT) */
         /* The '~' combinator tells CSS: "find the .content container that comes after the checked box" */
-        .toggle-checkbox:checked~.content {
-            --bg-primary: #121212;
+        /* .toggle-checkbox:checked~.content { */
+        :root {
+            /* --bg-primary: #121212;
             --text-primary: #f9fafb;
             --accent-color: #60a5fa;
-            --card-bg: #1e1e1e;
+            --card-bg: #1e1e1e; */
 
             .leaflet-tile-container {
-                filter: grayscale(100%);
-                -webkit-filter: grayscale(100%);
+                filter: grayscale(25%) contrast(100%) brightness(90%);
+                -webkit-filter: grayscale(25%) contrast(100%) brightness(90%);
             }
         }
 
@@ -257,10 +259,10 @@
 </head>
 
 <!-- Greyscale Toggle HTML -->
-<input type="checkbox" id="theme-toggle" class="toggle-checkbox">
+<!-- <input type="checkbox" id="theme-toggle" class="toggle-checkbox">
 <label for="theme-toggle" class="toggle-label">
     <span class="toggle-ball"></span>
-</label>
+</label> -->
 <!-- Greyscale Toggle HTML -->
 
 <!-- Tabs -->
@@ -351,15 +353,39 @@
         loadingNotice.classList.add('is-hidden');
     }
 
-    function loadCSVData(filePath) {
+    function loadCSVData(filePath, forceUpdate = false) {
         return new Promise((resolve, reject) => {
+            // Create a unique cache key based on the specific file path (e.g., "cached_zipData.csv")
+            const cacheKey = `cached_${filePath}`;
+
+            // 1. Check the session cache if a force update isn't requested
+            if (!forceUpdate) {
+                const cachedData = sessionStorage.getItem(cacheKey);
+                if (cachedData) {
+                    console.log(`Loading ${filePath} from sessionStorage cache...`);
+                    return resolve(JSON.parse(cachedData));
+                }
+            } else {
+                console.log(`Force update requested. Bypassing cache for ${filePath}...`);
+            }
+
+            // 2. Cache miss or forced update: Run Papa.parse to download the file
+            console.log(`Fetching and parsing fresh file: ${filePath}`);
             Papa.parse(filePath, {
-                download: true,   // Tells Papa Parse to fetch the file via HTTP
-                header: true,     // Converts rows into JavaScript objects using the header row keys
+                download: true,       // Tells Papa Parse to fetch the file via HTTP
+                header: true,         // Converts rows into JavaScript objects using the header row keys
                 skipEmptyLines: true, // Cleanly skips blank lines at the end of the file
 
                 complete: function (results) {
-                    // results.data contains your array of parsed objects
+                    try {
+                        // 3. Cache the newly retrieved data in sessionStorage
+                        sessionStorage.setItem(cacheKey, JSON.stringify(results.data));
+                    } catch (cacheError) {
+                        // Fail silently on caching if storage limit is exceeded, so the app still runs
+                        console.warn(`Failed to write ${filePath} to sessionStorage:`, cacheError);
+                    }
+
+                    // Return the data
                     resolve(results.data);
                 },
 
@@ -400,7 +426,7 @@
         }
     }
 
-    function waitForLayer(timeoutMs = 20000) {
+    function waitForLayer(timeoutMs = 30000) {
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
 
@@ -425,8 +451,18 @@
     //#region <!-- Initialize Map -->
     var map = L.map('map').setView([29.760, -95.370], 9); // Houston
     // const map = L.map('map').setView([39.74739, -105], 13); // Denver
-    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+    //const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+    //const osm = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+    const cartoRVMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20,
+        minZoom: 0
+    });
+    cartoRVMap.addTo(map);
+
     //#endregion
+
 
     //#region <!-- Setup Icons -->
     var greenIcon = new L.Icon({
@@ -447,16 +483,16 @@
             popupAnchor: [0, -20]
         }
     });
-    const artIcon = new placeIcon({ iconUrl: './img/art.svg' });
-    const churchIcon = new placeIcon({ iconUrl: './img/church.svg' });
-    const collegeIcon = new placeIcon({ iconUrl: './img/college.svg' });
-    const commerceIcon = new placeIcon({ iconUrl: './img/commerce.svg' });
-    const hammerIcon = new placeIcon({ iconUrl: './img/hammer.svg' });
-    const houseIcon = new placeIcon({ iconUrl: './img/house.svg' });
-    const policyIcon = new placeIcon({ iconUrl: './img/policy.svg' });
-    const serviceIcon = new placeIcon({ iconUrl: './img/service.svg' });
-    const trainingIcon = new placeIcon({ iconUrl: './img/training.svg' });
-    //const unknownIcon = new placeIcon({ iconUrl: './img/question.svg' });
+    // const artIcon = new placeIcon({ iconUrl: './img/art.svg' });
+    // const churchIcon = new placeIcon({ iconUrl: './img/church.svg' });
+    // const collegeIcon = new placeIcon({ iconUrl: './img/college.svg' });
+    // const commerceIcon = new placeIcon({ iconUrl: './img/commerce.svg' });
+    // const hammerIcon = new placeIcon({ iconUrl: './img/hammer.svg' });
+    // const houseIcon = new placeIcon({ iconUrl: './img/house.svg' });
+    // const policyIcon = new placeIcon({ iconUrl: './img/policy.svg' });
+    // const serviceIcon = new placeIcon({ iconUrl: './img/service.svg' });
+    // const trainingIcon = new placeIcon({ iconUrl: './img/training.svg' });
+    // //const unknownIcon = new placeIcon({ iconUrl: './img/question.svg' });
     const unknownIcon = new placeIcon({ iconUrl: './img/unknown.svg' });
 
     var glowingIconTest = L.icon({
@@ -485,13 +521,14 @@
     //#endregion
 
     //#region <!-- Add layers -->
-    const osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
-    });
+    //const osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+    //    maxZoom: 19,
+    //    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
+    //});
     const baseLayers = {
-        'OpenStreetMap': osm
-        , 'OpenStreetMap.HOT': osmHOT
+        //'OpenStreetMap': osm
+        cartoRVMap: cartoRVMap
+        //, 'OpenStreetMap.HOT': osmHOT
         //, 'OpenStreetMap.TEST1': osmTEST1
         //, 'OpenStreetMap.TEST2': osmTEST2
         //, 'OpenStreetMap.TEST3': osmTEST3
@@ -534,34 +571,34 @@
     layerControl.addOverlay(zipsLGC, 'Show Zip Codes');
     // SHAPES
 
-    // Add layer after the fact
-    const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-    });
-    layerControl.addBaseLayer(openTopoMap, 'OpenTopoMap');
-    // Example using 'light_all' (Positron)
-    var cartoLAMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20,
-        minZoom: 0
-    });
-    layerControl.addBaseLayer(cartoLAMap, 'cartoLAMap');
-    var cartoDAMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20,
-        minZoom: 0
-    });
-    layerControl.addBaseLayer(cartoDAMap, 'cartoDAMap');
-    var cartoRVMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20,
-        minZoom: 0
-    });
-    layerControl.addBaseLayer(cartoRVMap, 'cartoRVMap');
+    // // Add layer after the fact
+    // const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+    //     maxZoom: 19,
+    //     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+    // });
+    // layerControl.addBaseLayer(openTopoMap, 'OpenTopoMap');
+    // // Example using 'light_all' (Positron)
+    // var cartoLAMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
+    //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    //     subdomains: 'abcd',
+    //     maxZoom: 20,
+    //     minZoom: 0
+    // });
+    // layerControl.addBaseLayer(cartoLAMap, 'cartoLAMap');
+    // var cartoDAMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
+    //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    //     subdomains: 'abcd',
+    //     maxZoom: 20,
+    //     minZoom: 0
+    // });
+    // layerControl.addBaseLayer(cartoDAMap, 'cartoDAMap');
+    // var cartoRVMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
+    //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    //     subdomains: 'abcd',
+    //     maxZoom: 20,
+    //     minZoom: 0
+    // });
+    // layerControl.addBaseLayer(cartoRVMap, 'cartoRVMap');
     //#endregion
 
     //#region <!-- JS to handle overlays -->
@@ -829,41 +866,52 @@
                 fillOpacity: 0.8
             });
         }
-        else if (iconName == "art") {
-            return L.marker(L.latLng(lat, lon), { icon: artIcon });
-        }
-        else if (iconName == "church") {
-            return L.marker(L.latLng(lat, lon), { icon: churchIcon });
-        }
-        else if (iconName == "college") {
-            return L.marker(L.latLng(lat, lon), { icon: collegeIcon });
-        }
-        else if (iconName == "commerce") {
-            return L.marker(L.latLng(lat, lon), { icon: commerceIcon });
-        }
-        else if (iconName == "hammer") {
-            return L.marker(L.latLng(lat, lon), { icon: hammerIcon });
-        }
-        else if (iconName == "house") {
-            return L.marker(L.latLng(lat, lon), { icon: houseIcon });
-        }
-        else if (iconName == "policy") {
-            return L.marker(L.latLng(lat, lon), { icon: policyIcon });
-        }
-        else if (iconName == "service") {
-            return L.marker(L.latLng(lat, lon), { icon: serviceIcon });
-        }
-        else if (iconName == "training") {
-            return L.marker(L.latLng(lat, lon), { icon: trainingIcon });
-        }
+        // else if (iconName == "art") {
+        //     return L.marker(L.latLng(lat, lon), { icon: artIcon });
+        // }
+        // else if (iconName == "church") {
+        //     return L.marker(L.latLng(lat, lon), { icon: churchIcon });
+        // }
+        // else if (iconName == "college") {
+        //     return L.marker(L.latLng(lat, lon), { icon: collegeIcon });
+        // }
+        // else if (iconName == "commerce") {
+        //     return L.marker(L.latLng(lat, lon), { icon: commerceIcon });
+        // }
+        // else if (iconName == "hammer") {
+        //     return L.marker(L.latLng(lat, lon), { icon: hammerIcon });
+        // }
+        // else if (iconName == "house") {
+        //     return L.marker(L.latLng(lat, lon), { icon: houseIcon });
+        // }
+        // else if (iconName == "policy") {
+        //     return L.marker(L.latLng(lat, lon), { icon: policyIcon });
+        // }
+        // else if (iconName == "service") {
+        //     return L.marker(L.latLng(lat, lon), { icon: serviceIcon });
+        // }
+        // else if (iconName == "training") {
+        //     return L.marker(L.latLng(lat, lon), { icon: trainingIcon });
+        // }
+        // else {
+        //     var curMrkr = L.marker(L.latLng(lat, lon), { icon: unknownIcon });
+        //     //return curMrkr;
+        //     //var glowMrkr = setGlowOnMarkerTheLeafletWay(curMrkr);
+        //     //return glowMrkr;
+        //     //return setGlowOnMarkerTheLeafletWay(L.marker(L.latLng(lat, lon), { icon: unknownIcon }));
+        //     //var curMrkr = L.marker(L.latLng(lat, lon), { icon: glowingIconTest });
+        //     return curMrkr;
+        // }
         else {
-            var curMrkr = L.marker(L.latLng(lat, lon), { icon: unknownIcon });
-            //return curMrkr;
-            //var glowMrkr = setGlowOnMarkerTheLeafletWay(curMrkr);
-            //return glowMrkr;
-            //return setGlowOnMarkerTheLeafletWay(L.marker(L.latLng(lat, lon), { icon: unknownIcon }));
-            //var curMrkr = L.marker(L.latLng(lat, lon), { icon: glowingIconTest });
-            return curMrkr;
+            // Look up the matching pre-created Leaflet icon
+            var matchingIcon = mapIcons[iconName];
+            if (matchingIcon) {
+                return L.marker(L.latLng(lat, lon), { icon: matchingIcon });
+            } else {
+                console.warn(`No icon found for: ${iconName}. Using default.`);
+                var curMrkr = L.marker(L.latLng(lat, lon), { icon: unknownIcon });
+                return curMrkr;
+            }
         }
     }
     //#endregion
@@ -1011,31 +1059,27 @@
 
     //#endregion
 
-    //#region <!-- Collect partner data from Sharepoint AND Construct GeoJSon AND Create Markers AND Create Search List -->
+    //#region <!-- Collect Sharepoint and CSV Data -->
+
     // Power Automate Request
     var FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ff82a7d67c2d4cd6910acfd25292bf33/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=dWBZIsS0c4S6almW4PQljf3U-89_AEREfeiy7IHTArc";
     var SERVICE_FLOW_URL =
         "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d48e7d02cb33470490ae3e4aab69b11b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=JskPHZpzvA9NZMdDpni5WMVXMv4eaBrEXlOlGDmZARg";
+    var OP_FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fcbb117e644449e8a8fa651ec5517592/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Sgjr_A_eSKe02E8UXa27T0JaMyzx1bCFS2f_F2ROftk";
+    var POP_FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/eb77c19c9c684594b7d9bcad5de664c2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=OhqNdqS6dV-CQ0KM3f4P1kx5bz9YJYk6PPwakHIIKks";
 
-
-    var partnerDataGJSN = {
-        type: "FeatureCollection",
-        features: []
-    };
-
-    let partnerDataLayer;
     //let serviceList = [];
     var serviceDataJSN;
+    var opDataJSN;
+    var popDataJSN;
+    var partnerDataJSN;
 
-    async function initMapData() {
+    async function collectData(forceUpdate = false) {
         // Load CSV data for zip codes
-        zipData = await loadCSVData('zipData.csv');
-
-        // Get services first, because should be quick and painless
+        zipData = await loadCSVData('zipData.csv', forceUpdate);
         try {
             console.log("Fetching Power Automate service data...");
             var serviceDataJSNstr = sessionStorage.getItem('serviceDataJSNstr'); // try to get cached data
-            const forceUpdate = false;
             if (!serviceDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
                 // PAUSE here until the HTTP request finishes downloading
                 const response = await fetch(SERVICE_FLOW_URL);
@@ -1049,32 +1093,34 @@
         } catch (error) {
             console.error("Critical error fetching or processing Power Automate flow service data:", error);
         }
-
-        // We should have all the service data now, so we can create our service search
-        serviceDataJSN.forEach(element => {
-            //console.log("Test: ", element);
-            //console.log("Service: ", element.Service);
-            //console.log(" ServiceCategory: ", element.ServiceCategory);
-            //console.log(" Definition: ", element.Definition);
-            //console.log(" Abbreviation: ", element.Abbreviation);
-            var serviceURL = encodeURIComponent(element.Service);
-            var searchData = element.Abbreviation + '<br>' + element.Service + '<br>' + element.ServiceCategory + '<br>' + element.Definition;
-            var displayData = element.Definition;
-            serviceSearchList.innerHTML += `
-                    <li class="item" title="${element.Abbreviation}" data-search='${searchData}'> 
-                        <div class="item-main">
-                            <a href=?service=${serviceURL}> ${element.Service} </a>
-                            <br> ${displayData}
-                        </div>
-                    </li>`;
-        });
-        console.log("Service search created.");
-
+        try {
+            var opDataJSNstr = sessionStorage.getItem('opDataJSNstr'); // try to get cached data
+            if (!opDataJSNstr || forceUpdate) {
+                const response = await fetch(OP_FLOW_URL);
+                opDataJSN = await response.json();
+                sessionStorage.setItem('opDataJSNstr', JSON.stringify(opDataJSN));
+            } else {
+                opDataJSN = JSON.parse(opDataJSNstr);
+            }
+        } catch (error) {
+            console.error("Critical error fetching or processing Power Automate flow operation data:", error);
+        }
+        try {
+            var popDataJSNstr = sessionStorage.getItem('popDataJSNstr'); // try to get cached data
+            if (!popDataJSNstr || forceUpdate) {
+                const response = await fetch(POP_FLOW_URL);
+                popDataJSN = await response.json();
+                sessionStorage.setItem('popDataJSNstr', JSON.stringify(popDataJSN));
+            } else {
+                popDataJSN = JSON.parse(popDataJSNstr);
+            }
+        } catch (error) {
+            console.error("Critical error fetching or processing Power Automate flow population data:", error);
+        }
         try {
             console.log("Fetching Power Automate flow partner data...");
-            var partnerDataJSN;
+            partnerDataJSN;
             var partnerDataJSNstr = sessionStorage.getItem('partnerDataJSNstr'); // try to get cached data
-            const forceUpdate = false;
             if (!partnerDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
                 // PAUSE here until the HTTP request finishes downloading
                 const response = await fetch(FLOW_URL);
@@ -1084,47 +1130,165 @@
             } else {
                 partnerDataJSN = JSON.parse(partnerDataJSNstr);
             }
-
             // Debugging Step: See exactly what Power Automate is handing you!
             console.log("Data successfully loaded! Parsing features...", partnerDataJSN);
+        } catch (error) {
+            console.error("Critical error fetching or processing Power Automate flow data:", error);
+        }
+        console.log("Partner data collected...");
 
-            const columnsToRemove = [
-                "@odata.etag", "ItemInternalId", "ID", "{Identifier}", "{IsFolder}",
-                "{Thumbnail}", "{Link}", "{Name}", "{FilenameWithExtension}",
-                "{Path}", "{FullPath}", "{ContentType}", "{ContentType}#Id",
-                "{HasAttachments}", "{VersionNumber}"
-            ];
+        // Add abbreviation data to global database: abbreviationDB
+        addToAbbreviationDatabase(serviceDataJSN, "Service", "Abbreviation");
+        addToAbbreviationDatabase(opDataJSN, "OperationalFocus", "Abbreviation");
+        addToAbbreviationDatabase(popDataJSN, "PopulationFocus", "Abbreviation");
 
-            partnerDataJSN.items.forEach(function (item, index) {
-                //Object.keys(partnerDataJSN.items).forEach(function (key, index) {
-                const lat = item.Lat;
-                const lon = item.Lon;
-                const incl = item.Include
+        try {
+            generateLeafletIcons(Object.keys(abbreviationDB));
+        } catch (err) {
+            console.error("Error initializing icons:", err);
+        }
 
-                if (isNaN(lat) || isNaN(lon) || lat == 0 || lon == 0 || incl == "No") return;
+        initMapData();
 
-                const partnerName = item.Title.replace(/[\r\n]+/g, ' ');
-                const pointName = item.OrgLocation.replace(/[\r\n]+/g, ' ');
+        initSearch();
+    }
 
-                //let rawAddress = item.FullAddress || "";
-                //let cleanAddress = rawAddress.trim().replace(/}$/, '').trim();
+    const forceUpdate = false;
+    collectData(forceUpdate);
 
-                const services = [item.PrimaryService, item.SecondaryService, item.TertiaryService];
+    //#endregion <!-- Collect Sharepoint and CSV Data, create icons -->
 
-                var pointNameURL = encodeURIComponent(pointName);
-                // Check if item.Description exists, isn't null, and isn't "0" or 0
-                var descriptionChunk = (item.Description && item.Description !== '0' && item.Description !== 0)
-                    ? `\n${item.Description}\n`
-                    : '';
-                var titleData = pointName + '\n' + item.FullAddress + '\n' + '<a href=?service=' + encodeURIComponent(item.PrimaryService) + '>' + item.PrimaryService + '</a>' + '\n' + descriptionChunk + '\n';
-                // var titleData = `
-                //     <strong>${pointName}</strong><br>
-                //     ${item.FullAddress}<br>
-                //     <a href="?service=${encodeURIComponent(item.PrimaryService)}">${item.PrimaryService}</a>
-                //     ${descriptionChunk}
-                // `.trim();
-                var searchData = partnerName + item.ZipCode + item.PrimaryService + item.SecondaryService + item.TertiaryService + descriptionChunk;
-                itemSearchList.innerHTML += `
+    //#region <!--Create search lists (other than partner data) and abbreviation database -->
+
+    async function initSearch() {
+        // We should have all the service data now, so we can create our service search
+        serviceDataJSN.forEach(element => {
+            //console.log(" Abbreviation: ", element.Abbreviation);
+            var serviceURL = encodeURIComponent(element.Abbreviation);
+            var searchData = element.Abbreviation + '<br>' + element.Service + '<br>' + element.ServiceCategory + '<br>' + element.Definition;
+            var displayData = element.Definition;
+            serviceSearchList.innerHTML += `
+                <li class="item" title="${element.Abbreviation}" data-search='${searchData}'> 
+                <div class="item-main">
+                <a href=?service=${serviceURL}> ${element.Service} </a>
+                <br> ${displayData}
+                </div>
+                </li>`;
+        });
+        console.log("Service search created.");
+    }
+
+    // The centralized abbreviation registry
+    const abbreviationDB = {};
+
+    function addToAbbreviationDatabase(data, nameColName, abvColName) {
+        // Safety check: ensure data is a valid array
+        if (!Array.isArray(data)) {
+            console.error("Provided data is not a valid array.");
+            return;
+        }
+
+        let itemsAdded = 0;
+
+        data.forEach(row => {
+            // Extract the raw values dynamically using the provided column name strings
+            const rawAbv = row[abvColName];
+            const rawName = row[nameColName];
+
+            // Clean and normalize the abbreviation key (trimmed, uppercase for consistency)
+            if (rawAbv && rawName) {
+                //const cleanAbv = rawAbv.toString().trim().toUpperCase();
+                const cleanAbv = rawAbv.toString().trim().toLowerCase();
+                const cleanName = rawName.toString().trim();
+
+                // Add or update the registry
+                abbreviationDB[cleanAbv] = cleanName;
+                itemsAdded++;
+            }
+        });
+
+        console.log(`Database Updated: Registered ${itemsAdded} entries using columns [Abv: "${abvColName}", Name: "${nameColName}"].`);
+    }
+
+    function getAbbreviationFromDatabse(longName) {
+        if (!longName) return null;
+        const searchName = longName.toLowerCase().trim();
+        //const searchName = longName;
+        // Find the key (abbreviation) where the value matches the long name
+        const match = Object.keys(abbreviationDB).find(key => {
+            return abbreviationDB[key].toLowerCase().trim() === searchName;
+        });
+        return match || null;
+    }
+
+    //#endregion <!--Create search lists (other than partner data) and abbreviation database -->
+
+    //#region <!-- Create Icons -->
+
+    // A global object to hold your generated Leaflet icons
+    const mapIcons = {};
+    function generateLeafletIcons(abbreviationsList) {
+        // 1. Get a unique list of abbreviations using a Set so we don't recreate the same icon twice
+        //const uniqueAbbreviations = [...new Set(serviceDataArray.map(item => item.Abbreviation))];
+
+        // 2. Loop through each unique abbreviation
+        abbreviationsList.forEach(abbreviation => {
+            // Guard clause: Skip if abbreviation is empty or undefined
+            if (!abbreviation) return;
+
+            // Clean up the string for the filename (lowercase/trimmed to prevent path issues)
+            const fileName = abbreviation.toLowerCase().trim();
+            const iconPath = `./img/${fileName}.svg`;
+
+            try {
+                // 3. Create the new Leaflet icon using your custom placeIcon class
+                mapIcons[abbreviation] = new placeIcon({
+                    iconUrl: iconPath
+                });
+
+                //console.log(`Successfully registered icon for: ${abbreviation} -> ${iconPath}`);
+            } catch (error) {
+                console.error(`Failed to create Leaflet icon for ${abbreviation}:`, error);
+            }
+        });
+    }
+
+    //#endregion <!-- Create Icons -->
+
+    //#region <!-- Construct GeoJSon AND Create Markers AND Create Search List -->
+
+    var partnerDataGJSN = {
+        type: "FeatureCollection",
+        features: []
+    };
+    let partnerDataLayer;
+
+    async function initMapData() {
+
+        partnerDataJSN.items.forEach(function (item, index) {
+            //Object.keys(partnerDataJSN.items).forEach(function (key, index) {
+            const lat = item.Lat;
+            const lon = item.Lon;
+            const incl = item.Include
+
+            if (isNaN(lat) || isNaN(lon) || lat == 0 || lon == 0 || incl == "No") return;
+
+            const partnerName = item.Title.replace(/[\r\n]+/g, ' ');
+            const pointName = item.OrgLocation.replace(/[\r\n]+/g, ' ');
+            const servicesFull = [item.PrimaryService, item.SecondaryService, item.TertiaryService];
+            // Probably most efficient to get the abbreviations and save them here
+            const services = servicesFull
+                .map(longName => getAbbreviationFromDatabse(longName))
+                .filter(abv => abv !== null);
+
+            var pointNameURL = encodeURIComponent(pointName);
+            // Check if item.Description exists, isn't null, and isn't "0" or 0
+            var descriptionChunk = (item.Description && item.Description !== '0' && item.Description !== 0)
+                ? `\n${item.Description}\n`
+                : '';
+            var titleData = pointName + '\n' + item.FullAddress + '\n' + '<a href=?service=' + encodeURIComponent(item.PrimaryService) + '>' + item.PrimaryService + '</a>' + '\n' + descriptionChunk + '\n';
+            var searchData = partnerName + item.ZipCode + item.PrimaryService + item.SecondaryService + item.TertiaryService + descriptionChunk;
+            itemSearchList.innerHTML += `
                     <li class="item" title="${titleData}" data-search='${searchData}'> 
                         <div class="item-main">
                             <a href=?pointName=${pointNameURL}> ${pointName} </a>
@@ -1135,39 +1299,33 @@
                         </div>
                     </li>`;
 
-                partnerDataGJSN.features.push({
-                    geometry: {
-                        type: "Point",
-                        coordinates: [lon, lat]
-                    },
-                    type: "Feature",
-                    properties: {
-                        pointName: `${pointName}`
-                        , organization: `${partnerName}`
-                        , address: `${item.FullAddress}`
-                        , zip: `${item.ZipCode}`
-                        , phone: `${item.Phone}`
-                        , sms: `${item.SMS}`
-                        , email: `${item.Email}`
-                        , website: `${item.Website}`
-                        , description: `${item.Description}`
-                        , opfocus: `${item.OperationalFocus}`
-                        , icon: `${item.Icon}`
-                        , primaryService: `${item.PrimaryService}`
-                        , secondaryService: `${item.SecondaryService}`
-                        , tertiaryService: `${item.TertiaryService}`
-                        , services: services
-                        //, service: `${item.PrimaryService}`
-                    },
-                    id: item.ID
-                });
+            partnerDataGJSN.features.push({
+                geometry: {
+                    type: "Point",
+                    coordinates: [lon, lat]
+                },
+                type: "Feature",
+                properties: {
+                    pointName: `${pointName}`
+                    , organization: `${partnerName}`
+                    , address: `${item.FullAddress}`
+                    , zip: `${item.ZipCode}`
+                    , phone: `${item.Phone}`
+                    , sms: `${item.SMS}`
+                    , email: `${item.Email}`
+                    , website: `${item.Website}`
+                    , description: `${item.Description}`
+                    , opfocus: `${item.OperationalFocus}`
+                    , icon: `${item.Icon}`
+                    , primaryService: `${item.PrimaryService}`
+                    , secondaryService: `${item.SecondaryService}`
+                    , tertiaryService: `${item.TertiaryService}`
+                    , services: services
+                    //, service: `${item.PrimaryService}`
+                },
+                id: item.ID
             });
-        } catch (error) {
-            console.error("Critical error fetching or processing Power Automate flow data:", error);
-        }
-        console.log("Data collected...");
-
-        //#region <!-- Use partnerDataGJSN to create the markers -->
+        });
 
         // Wrap the entire initialization into a Promise variable
         const buildGeoJsonLayer = new Promise((resolve, reject) => {
@@ -1181,11 +1339,8 @@
                     pointToLayer(feature, latlng) {
                         const lon = feature.geometry.coordinates[0];
                         const lat = feature.geometry.coordinates[1];
-                        var icon = feature.properties.icon;
-                        //var primaryService = feature.properties.primaryService;
-                        //var secondaryService = feature.properties.secondaryService;
-                        //var tertiaryService = feature.properties.tertiaryService;
-                        //var services = feature.properties.services;
+                        //var icon = feature.properties.icon;
+                        icon = getAbbreviationFromDatabse(feature.properties.opfocus);
 
                         if (icon == null) {
                             icon = "unknown";
@@ -1213,10 +1368,7 @@
 
         console.log("Constructed GeoJSON Object:", partnerDataGJSN);
 
-        //#endregion        
     }
-
-    initMapData();
 
     //#endregion
 
@@ -1244,15 +1396,16 @@
                 .filter(index => index !== -1);
             //console.log(svcIdx);
             //const allServices = urlParams.getAll('service');
-            svcIdx.forEach(idx => { // if abv found, replace with full service
+            svcIdx.forEach(idx => {
                 serviceCount++;
-                var val = valsa[idx];
-                var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
-                if (match_row != undefined) {
-                    var match = match_row.Service;
-                    val = match ? match : val;
-                }
-                valsa[idx] = val;
+                // THIS GETS THE FULL SERVICE NAME, WE DONT NEED THIS ANYMORE?
+                // var val = valsa[idx];
+                // var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
+                // if (match_row != undefined) {
+                //     var match = match_row.Service;
+                //     val = match ? match : val;
+                // }
+                // valsa[idx] = val;
             });
         }
         //Add adjacent zip codes
@@ -1284,7 +1437,7 @@
         // service + zip should always be and
 
         console.log("Processing map filters...");
-        
+
         partnerDataLayer.eachLayer(function (layer) {
             const properties = layer.feature.properties;
             let targetKey;
@@ -1351,7 +1504,6 @@
         console.log('The page and all resources have fully loaded!'); //Not true
         showLoadingNotice('Loading map data', 'Fetching locations and services…');
 
-        //#region <!-- JS to process get/post -->
         // 2. Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
 
@@ -1369,7 +1521,7 @@
             hideLoadingNotice();
         }
     });
-    //#endregion
+    //#endregion <!-- Javascript Listeners - Also process get/post here -->
 
     //#region <!-- JS for Choropleth -->
 

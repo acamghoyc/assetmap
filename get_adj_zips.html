@@ -1,105 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>ZCTA Adjacency Calculator</title>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
-    
+
     <script src="zipShapes.js"></script>
 </head>
+
 <body>
 
     <h3>Check the Browser Console (F12) for the Adjacency Results Table!</h3>
 
 
-<script>
-    // 1. Your array of target ZIP codes
-    const myZipList = new Set([
-        "75851","75852","75862","77002","77003","77004","77005","77006","77007","77008","77009","77010","77011","77012","77013","77014","77015","77016","77017","77018","77019","77020","77021","77022","77023","77024","77025","77026","77027","77028","77029","77030","77031","77032","77033","77034","77035","77036","77037","77038","77039","77040","77041","77042","77043","77044","77045","77046","77047","77048","77049","77050","77051","77053","77054","77055","77056","77057","77058","77059","77060","77061","77062","77063","77064","77065","77066","77067","77068","77069","77070","77071","77072","77073","77074","77075","77076","77077","77078","77079","77080","77081","77082","77083","77084","77085","77086","77087","77088","77089","77090","77091","77092","77093","77094","77095","77096","77098","77099","77204","77301","77302","77303","77304","77306","77316","77318","77320","77327","77328","77334","77336","77338","77339","77340","77341","77342","77345","77346","77351","77354","77355","77356","77357","77358","77359","77362","77363","77365","77367","77368","77369","77371","77372","77373","77374","77375","77376","77377","77378","77379","77380","77381","77382","77384","77385","77386","77388","77389","77396","77401","77406","77407","77412","77414","77415","77417","77418","77419","77420","77422","77423","77426","77428","77429","77430","77431","77432","77433","77434","77435","77436","77437","77440","77441","77442","77443","77444","77445","77446","77447","77448","77449","77450","77451","77453","77454","77455","77456","77457","77458","77459","77460","77461","77464","77465","77466","77467","77468","77469","77470","77471","77473","77474","77475","77476","77477","77478","77479","77480","77481","77482","77483","77484","77485","77486","77488","77489","77493","77494","77498","77502","77503","77504","77505","77506","77507","77510","77511","77514","77515","77517","77518","77519","77520","77521","77523","77530","77531","77532","77533","77534","77535","77536","77538","77539","77541","77545","77546","77547","77550","77551","77554","77555","77560","77561","77562","77563","77564","77565","77566","77568","77571","77573","77575","77577","77578","77580","77581","77582","77583","77584","77586","77587","77590","77591","77597","77598","77617","77623","77629","77650","77659","77661","77665","77830","77831","77833","77835","77864","77868","77873","77880","77957","77961","77962","77964","77979","78931","78933","78934","78935","78938","78940","78943","78944","78950","78951","78954","78956","78962"    
-]);
+    <script>
+        // 1. Your array of target ZIP codes
+        const myZipList = new Set([
+            "75851", "75852", "75862", "77002", "77003", "77004", "77005", "77006", "77007", "77008", "77009", "77010", "77011", "77012", "77013", "77014", "77015", "77016", "77017", "77018", "77019", "77020", "77021", "77022", "77023", "77024", "77025", "77026", "77027", "77028", "77029", "77030", "77031", "77032", "77033", "77034", "77035", "77036", "77037", "77038", "77039", "77040", "77041", "77042", "77043", "77044", "77045", "77046", "77047", "77048", "77049", "77050", "77051", "77053", "77054", "77055", "77056", "77057", "77058", "77059", "77060", "77061", "77062", "77063", "77064", "77065", "77066", "77067", "77068", "77069", "77070", "77071", "77072", "77073", "77074", "77075", "77076", "77077", "77078", "77079", "77080", "77081", "77082", "77083", "77084", "77085", "77086", "77087", "77088", "77089", "77090", "77091", "77092", "77093", "77094", "77095", "77096", "77098", "77099", "77204", "77301", "77302", "77303", "77304", "77306", "77316", "77318", "77320", "77327", "77328", "77334", "77336", "77338", "77339", "77340", "77341", "77342", "77345", "77346", "77351", "77354", "77355", "77356", "77357", "77358", "77359", "77362", "77363", "77365", "77367", "77368", "77369", "77371", "77372", "77373", "77374", "77375", "77376", "77377", "77378", "77379", "77380", "77381", "77382", "77384", "77385", "77386", "77388", "77389", "77396", "77401", "77406", "77407", "77412", "77414", "77415", "77417", "77418", "77419", "77420", "77422", "77423", "77426", "77428", "77429", "77430", "77431", "77432", "77433", "77434", "77435", "77436", "77437", "77440", "77441", "77442", "77443", "77444", "77445", "77446", "77447", "77448", "77449", "77450", "77451", "77453", "77454", "77455", "77456", "77457", "77458", "77459", "77460", "77461", "77464", "77465", "77466", "77467", "77468", "77469", "77470", "77471", "77473", "77474", "77475", "77476", "77477", "77478", "77479", "77480", "77481", "77482", "77483", "77484", "77485", "77486", "77488", "77489", "77493", "77494", "77498", "77502", "77503", "77504", "77505", "77506", "77507", "77510", "77511", "77514", "77515", "77517", "77518", "77519", "77520", "77521", "77523", "77530", "77531", "77532", "77533", "77534", "77535", "77536", "77538", "77539", "77541", "77545", "77546", "77547", "77550", "77551", "77554", "77555", "77560", "77561", "77562", "77563", "77564", "77565", "77566", "77568", "77571", "77573", "77575", "77577", "77578", "77580", "77581", "77582", "77583", "77584", "77586", "77587", "77590", "77591", "77597", "77598", "77617", "77623", "77629", "77650", "77659", "77661", "77665", "77830", "77831", "77833", "77835", "77864", "77868", "77873", "77880", "77957", "77961", "77962", "77964", "77979", "78931", "78933", "78934", "78935", "78938", "78940", "78943", "78944", "78950", "78951", "78954", "78956", "78962"
+        ]);
 
-    // Helper function to extract all coordinate pairs as unique string keys ("lng,lat")
-    function getCoordinateSet(geometry) {
-        const coords = new Set();
-        if (!geometry || !geometry.coordinates) return coords;
+        // Helper function to extract all coordinate pairs as unique string keys ("lng,lat")
+        function getCoordinateSet(geometry) {
+            const coords = new Set();
+            if (!geometry || !geometry.coordinates) return coords;
 
-        // Flatten Polygons and MultiPolygons recursively
-        function extract(arr) {
-            if (typeof arr[0] === 'number' && typeof arr[1] === 'number') {
-                // Round to 4 decimal places to account for minor floating-point clipping variations (~11 meters precision)
-                coords.add(`${arr[0].toFixed(4)},${arr[1].toFixed(4)}`);
+            // Flatten Polygons and MultiPolygons recursively
+            function extract(arr) {
+                if (typeof arr[0] === 'number' && typeof arr[1] === 'number') {
+                    // Round to 4 decimal places to account for minor floating-point clipping variations (~11 meters precision)
+                    coords.add(`${arr[0].toFixed(4)},${arr[1].toFixed(4)}`);
+                    return;
+                }
+                for (let i = 0; i < arr.length; i++) {
+                    extract(arr[i]);
+                }
+            }
+
+            extract(geometry.coordinates);
+            return coords;
+        }
+
+        function calculateAdjacencies() {
+            if (!window.zipShapes || !window.zipShapes.features) {
+                console.error("Could not find window.zipShapes data.");
                 return;
             }
-            for (let i = 0; i < arr.length; i++) {
-                extract(arr[i]);
-            }
-        }
-        
-        extract(geometry.coordinates);
-        return coords;
-    }
 
-    function calculateAdjacencies() {
-        if (!window.zipShapes || !window.zipShapes.features) {
-            console.error("Could not find window.zipShapes data.");
-            return;
-        }
+            const results = {};
+            const features = window.zipShapes.features;
 
-        const results = {};
-        const features = window.zipShapes.features;
+            // Filter and pre-map coordinate sets for efficiency
+            const targetFeatures = features.map(f => {
+                const props = f.properties;
+                const zip = props.ZCTA5CE20 || props.ZCTA5CE10 || props.ZCTA5 || props.GEOID20 || props.GEOID10;
+                return {
+                    zip: zip,
+                    coordSet: getCoordinateSet(f.geometry)
+                };
+            }).filter(f => myZipList.has(f.zip) && f.coordSet.size > 0);
 
-        // Filter and pre-map coordinate sets for efficiency
-        const targetFeatures = features.map(f => {
-            const props = f.properties;
-            const zip = props.ZCTA5CE20 || props.ZCTA5CE10 || props.ZCTA5 || props.GEOID20 || props.GEOID10;
-            return {
-                zip: zip,
-                coordSet: getCoordinateSet(f.geometry)
-            };
-        }).filter(f => myZipList.has(f.zip) && f.coordSet.size > 0);
+            console.log(`Analyzing coordinate links for ${targetFeatures.length} matching shapes...`);
 
-        console.log(`Analyzing coordinate links for ${targetFeatures.length} matching shapes...`);
+            // Initialize empty arrays for all found target ZIPs
+            targetFeatures.forEach(f => results[f.zip] = []);
 
-        // Initialize empty arrays for all found target ZIPs
-        targetFeatures.forEach(f => results[f.zip] = []);
+            // Compare vertex networks
+            for (let i = 0; i < targetFeatures.length; i++) {
+                const zipA = targetFeatures[i].zip;
+                const setA = targetFeatures[i].coordSet;
 
-        // Compare vertex networks
-        for (let i = 0; i < targetFeatures.length; i++) {
-            const zipA = targetFeatures[i].zip;
-            const setA = targetFeatures[i].coordSet;
+                for (let j = i + 1; j < targetFeatures.length; j++) {
+                    const zipB = targetFeatures[j].zip;
+                    const setB = targetFeatures[j].coordSet;
 
-            for (let j = i + 1; j < targetFeatures.length; j++) {
-                const zipB = targetFeatures[j].zip;
-                const setB = targetFeatures[j].coordSet;
-
-                // Find intersection count of shared coordinates
-                let sharedPoints = 0;
-                for (let coord of setA) {
-                    if (setB.has(coord)) {
-                        sharedPoints++;
-                        // If they share 2 or more vertices, they share a border line segment
-                        if (sharedPoints >= 2) {
-                            results[zipA].push(zipB);
-                            results[zipB].push(zipA);
-                            break;
+                    // Find intersection count of shared coordinates
+                    let sharedPoints = 0;
+                    for (let coord of setA) {
+                        if (setB.has(coord)) {
+                            sharedPoints++;
+                            // If they share 2 or more vertices, they share a border line segment
+                            if (sharedPoints >= 2) {
+                                results[zipA].push(zipB);
+                                results[zipB].push(zipA);
+                                break;
+                            }
                         }
                     }
                 }
             }
+
+            // Output Results Table
+            console.clear();
+            const tableData = Object.entries(results).map(([zip, adjacent]) => ({
+                "ZCTA": zip,
+                "Adjacent ZIP Codes": adjacent.sort().join(', ') || 'None found'
+            })).sort((a, b) => a.ZCTA.localeCompare(b.ZCTA));
+
+            console.table(tableData);
         }
 
-        // Output Results Table
-        console.clear();
-        const tableData = Object.entries(results).map(([zip, adjacent]) => ({
-            "ZCTA": zip,
-            "Adjacent ZIP Codes": adjacent.sort().join(', ') || 'None found'
-        })).sort((a, b) => a.ZCTA.localeCompare(b.ZCTA));
-        
-        console.table(tableData);
-    }
-
-    window.addEventListener('DOMContentLoaded', calculateAdjacencies);
-</script>
+        window.addEventListener('DOMContentLoaded', calculateAdjacencies);
+    </script>
 
 </body>
+
 </html>

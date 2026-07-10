@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Service Finder Quiz</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -105,6 +106,53 @@
             margin-top: 2px;
         }
 
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: flex-start;
+            /* Aligns checkbox to the top of multi-line subtitles */
+            font-weight: normal;
+            cursor: pointer;
+            margin-bottom: 12px;
+            /* Adds space between different checkbox options */
+        }
+
+        .radio-label input {
+            margin-right: 12px;
+            margin-top: 3px;
+            /* Keeps the checkbox centered with the main title line */
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            /* Prevents the checkbox from squeezing/shrinking */
+        }
+
+        /* Container for the text strings */
+        .radio-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Main option heading */
+        .radio-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: #1a1a1a;
+        }
+
+        /* Muted descriptive subtitle */
+        .radio-subtitle {
+            font-size: 13px;
+            color: #6c757d;
+            /* Classic subtle gray color */
+            margin-top: 2px;
+        }
+
         .btn-container {
             display: flex;
             justify-content: space-between;
@@ -170,15 +218,27 @@
             background-color: #218838;
         }
     </style>
+    <!-- Load common libraries -->
+    <script src="./libraries/common.js" defer></script>
 </head>
 
 <body>
-
     <div class="quiz-container">
+        <div id="loadingNotice" class="loading-notice" role="status" aria-live="polite">
+            <div class="loading-card">
+                <div class="loading-spinner"></div>
+                <div class="loading-copy">
+                    <div class="loading-title">Loading map data</div>
+                    <div class="loading-subtitle">Fetching locations and services…</div>
+                </div>
+            </div>
+        </div>
         <form id="quizForm" onsubmit="return false;">
 
             <div class="step active" id="step1">
                 <h2>Where are you located?</h2>
+                <strong><i>If this an emergency, please dial 9-1-1.</i></strong>
+                <br><br>
                 <div class="form-group">
                     <label for="zipcode">ZIP Code</label>
                     <input type="text" id="zipcode" placeholder="e.g. 77002" maxlength="5" pattern="\d{5}"
@@ -212,19 +272,31 @@
 
             <div class="step" id="step3">
                 <div class="form-group">
+                    <label>Select if any apply:</label>
+                    <div class="radio-group" id="dynamicPopulationRadio"></div>
+                    <div class="error-message" id="populationError">Please select at least one choice.</div>
+                </div>
+                <div class="btn-container">
+                    <button type="button" class="btn-prev" onclick="prevStep(3)">Back</button>
+                    <button type="button" class="btn-next" onclick="nextStep(3)">Next</button>
+                </div>
+            </div>
+
+            <div class="step" id="step4">
+                <div class="form-group">
                     <label>Select all that apply:</label>
                     <div class="checkbox-group" id="dynamicServices"></div>
                     <div class="error-message" id="serviceError">Please select at least one service.</div>
                 </div>
                 <div class="btn-container">
-                    <button type="button" class="btn-prev" onclick="prevStep(3)">Back</button>
+                    <button type="button" class="btn-prev" onclick="prevStep(4)">Back</button>
                     <button type="button" class="btn-next" onclick="submitQuiz()"
                         style="background-color: #28a745;">Generate
                         Map Link</button>
                 </div>
             </div>
 
-            <div class="step" id="step4">
+            <div class="step" id="step5">
                 <h2>Your Map is Ready!</h2>
                 <p>Click the link below to view your personalized service map application:</p>
                 <div id="result"></div>
@@ -235,6 +307,8 @@
     </div>
 
     <script>
+
+        const loadingNotice = document.getElementById('loadingNotice');
 
         //#region - TODO
         // Special Populations
@@ -256,15 +330,15 @@
         //#region Get Services from Sharepoint and Render List
         var SERVICE_FLOW_URL =
             "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d48e7d02cb33470490ae3e4aab69b11b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=JskPHZpzvA9NZMdDpni5WMVXMv4eaBrEXlOlGDmZARg";
-
         var serviceDataJSN;
+        var POP_FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/eb77c19c9c684594b7d9bcad5de664c2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=OhqNdqS6dV-CQ0KM3f4P1kx5bz9YJYk6PPwakHIIKks";
+        var popDataJSN;
 
-        async function initData() {
+        async function initData(forceUpdate = false) {
             // Get services first, because should be quick and painless
             try {
                 console.log("Fetching Power Automate service data...");
                 var serviceDataJSNstr = sessionStorage.getItem('serviceDataJSNstr'); // try to get cached data
-                const forceUpdate = false;
                 if (!serviceDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
                     // PAUSE here until the HTTP request finishes downloading
                     const response = await fetch(SERVICE_FLOW_URL);
@@ -281,6 +355,26 @@
             } catch (error) {
                 console.error("Critical error fetching or processing Power Automate flow service data:", error);
             }
+            // Get population focus
+            try {
+                console.log("Fetching Power Automate population data...");
+                var popDataJSNstr = sessionStorage.getItem('popDataJSNstr'); // try to get cached data
+                if (!popDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
+                    // PAUSE here until the HTTP request finishes downloading
+                    const response = await fetch(POP_FLOW_URL);
+                    // PAUSE here until the data stream completely parses into JSON format
+                    popDataJSN = await response.json();
+                    sessionStorage.setItem('popDataJSNstr', JSON.stringify(popDataJSN));
+                } else {
+                    popDataJSN = JSON.parse(popDataJSNstr);
+                }
+                console.log("Population Data successfully loaded! Rendering radio buttons...");
+                // Render the UI once data is safe and ready
+                renderPopulationRadio();
+                console.log("Radio Buttons Rendered.");
+            } catch (error) {
+                console.error("Critical error fetching or processing Power Automate flow population data:", error);
+            }
         }
 
         function renderServiceCheckboxes() {
@@ -293,18 +387,42 @@
             serviceDataJSN.forEach(item => {
                 // Create the structured HTML string using backticks
                 const checkboxHTML = `
-            <label class="checkbox-label">
-                <input type="checkbox" name="services" value="${item.Abbreviation}">
-                <div class="checkbox-text">
-                    <span class="checkbox-title">${item.Service}</span>
-                    <span class="checkbox-subtitle">${item.Definition || ''}</span>
-                </div>
-            </label>
-        `;
-
+                <label class="checkbox-label">
+                    <input type="checkbox" name="services" value="${item.Abbreviation}">
+                    <div class="checkbox-text">
+                        <span class="checkbox-title">${item.Service}</span>
+                        <span class="checkbox-subtitle">${item.Definition || ''}</span>
+                    </div>
+                </label>
+                `;
                 // Append the new element to the container
                 container.insertAdjacentHTML('beforeend', checkboxHTML);
             });
+        }
+
+        function renderPopulationRadio() {
+            const container = document.getElementById('dynamicPopulationRadio');
+            if (!container) return; // Guard clause to make sure container exists
+
+            // Clear out any placeholder content first
+            container.innerHTML = '';
+
+            // Loop through each item in your JSON array
+            popDataJSN.forEach(item => {
+                // Create the structured HTML string using backticks
+                const radioHTML = `
+                <label class="radio-label">
+                    <input type="radio" name="population" value="${item.Abbreviation}">
+                    <div class="radio-text">
+                        <span class="radio-title">${item.PopulationFocus}</span>
+                        <span class="radio-subtitle">${item.Definition || ''}</span>
+                    </div>
+                </label>
+                `;
+                // Append the new element to the container
+                container.insertAdjacentHTML('beforeend', radioHTML);
+            });
+            console.log(`Rendered ${popDataJSN.length} population options as radio buttons.`);
         }
 
         //#endregion
@@ -357,6 +475,18 @@
                 }
             }
 
+            if (step === 3) {
+                //const populationInput = document.getElementById('dynamicPopulationRadio').value;
+                const selectedRadio = document.querySelector('input[name="population"]:checked');
+                const populationError = document.getElementById('populationError');
+                if (!selectedRadio) {
+                    populationError.style.display = 'block';
+                    isValid = false;
+                } else {
+                    populationError.style.display = 'none';
+                }
+            }
+
             return isValid;
         }
 
@@ -365,12 +495,20 @@
             const checkedServices = Array.from(document.querySelectorAll('input[name="services"]:checked'))
                 .map(cb => cb.value);
             const serviceError = document.getElementById('serviceError');
-
             if (checkedServices.length === 0) {
                 serviceError.style.display = 'block';
                 return;
             } else {
                 serviceError.style.display = 'none';
+            }
+            const checkedPopulation = Array.from(document.querySelectorAll('input[name="population"]:checked'))
+                .map(cb => cb.value);
+            const populationError = document.getElementById('populationError');
+            if (checkedPopulation.length === 0) {
+                populationError.style.display = 'block';
+                return;
+            } else {
+                populationError.style.display = 'none';
             }
 
             // Gather all values
@@ -386,11 +524,15 @@
             // Commas separating values is standard, or you can append multiple identical keys
             params.append('service', checkedServices.join(','));
 
+            params.append('population', checkedPopulation.join(','));
+
             const finalUrl = `${baseUrl}?${params.toString()}`;
 
             // Update UI to display the URL
-            document.getElementById('step3').classList.remove('active');
-            document.getElementById('step4').classList.add('active');
+            //document.getElementById('step3').classList.remove('active');
+            //document.getElementById('step4').classList.add('active');
+            document.getElementById('step4').classList.remove('active');
+            document.getElementById('step5').classList.add('active');
 
             document.getElementById('result').innerText = finalUrl;
             document.getElementById('linkContainer').innerHTML = `
@@ -403,6 +545,36 @@
         //#region Run any functions needed to load data
         initData();
         //#endregioin Run any functions needed to load data
+
+        //#region <!-- Javascript Listeners - Also process get/post here -->
+        // Wait until DOMContentLoaded
+        // document.addEventListener("DOMContentLoaded", function () {
+        //     // Automatically click the default open tab when the page loads
+        //     document.getElementById("defaultOpenB").click();
+        // });
+        window.addEventListener('load', async (event) => {
+            console.log('The page and all resources have fully loaded!'); //Not true
+            showLoadingNotice('Loading data', 'Fetching services…');
+
+            // 2. Parse URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+
+            try {
+                // Make sure all data is loaded first
+                console.log("Waiting for data stream...");
+                await waitForData(() => serviceDataJSN); // PAUSE right here until serviceDataJSN is fully loaded
+                await waitForData(() => popDataJSN);
+                console.log("Data is confirmed ready. Processing features now.");
+
+                //setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
+                //filterContentByMatch(urlParams);
+            } catch (error) {
+                console.error("Could not process external data:", error.message);
+            } finally {
+                hideLoadingNotice();
+            }
+        });
+        //#endregion <!-- Javascript Listeners - Also process get/post here -->
 
     </script>
 

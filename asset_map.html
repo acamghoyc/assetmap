@@ -20,6 +20,12 @@
     <!-- Include Papa Parse JavaScript file to handle csv files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Load common libraries -->
+    <script src="./libraries/common.js" defer></script>
+
     <!-- Style settings for mobile, take up whole screen -->
     <style>
         html,
@@ -34,70 +40,6 @@
             height: 75vh;
             width: 97vw;
         }
-
-        .loading-notice {
-            position: fixed;
-            inset: 0;
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(4px);
-            transition: opacity 0.25s ease, visibility 0.25s ease;
-        }
-
-        .loading-notice.is-hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-
-        .loading-card {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem 1.25rem;
-            border-radius: 0.85rem;
-            background: rgba(255, 255, 255, 0.96);
-            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2);
-            color: #0f172a;
-            min-width: min(90vw, 320px);
-        }
-
-        .loading-spinner {
-            width: 42px;
-            height: 42px;
-            border: 4px solid rgba(59, 130, 246, 0.25);
-            border-top-color: #3b82f6;
-            border-radius: 50%;
-            animation: spin 0.9s linear infinite;
-            flex-shrink: 0;
-        }
-
-        .loading-title {
-            font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 0.2rem;
-        }
-
-        .loading-subtitle {
-            font-size: 0.92rem;
-            color: #475569;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* .leaflet-container {
-            height: 400px;
-            width: 600px;
-        max-width: 100%;
-            max-height: 100%;
-        } */
     </style>
 
     <!-- Style settings for grayscale toggle -->
@@ -293,6 +235,7 @@
         <div class="search-container">
             <!-- Search Input Box -->
             <input type="search" id="itemSearchBar" placeholder="Search database..." />
+            <p>You may search by organization, city, zip code, service, or population.</p>
             <!-- JavaScript will inject <li> items here -->
             <ul id="itemSearchList"></ul>
         </div>
@@ -328,30 +271,6 @@
     //#region <!-- Utility functions -->
 
     const loadingNotice = document.getElementById('loadingNotice');
-
-    function showLoadingNotice(title = 'Loading map data', subtitle = 'Fetching locations and services…') {
-        if (!loadingNotice) return;
-        const titleEl = loadingNotice.querySelector('.loading-title');
-        const subtitleEl = loadingNotice.querySelector('.loading-subtitle');
-
-        if (titleEl) titleEl.textContent = title;
-        if (subtitleEl) subtitleEl.textContent = subtitle;
-        loadingNotice.classList.remove('is-hidden');
-    }
-
-    function setLoadingNoticeMessage(title, subtitle) {
-        if (!loadingNotice) return;
-        const titleEl = loadingNotice.querySelector('.loading-title');
-        const subtitleEl = loadingNotice.querySelector('.loading-subtitle');
-
-        if (titleEl && title) titleEl.textContent = title;
-        if (subtitleEl && subtitle) subtitleEl.textContent = subtitle;
-    }
-
-    function hideLoadingNotice() {
-        if (!loadingNotice) return;
-        loadingNotice.classList.add('is-hidden');
-    }
 
     function loadCSVData(filePath, forceUpdate = false) {
         return new Promise((resolve, reject) => {
@@ -759,8 +678,11 @@
         if (feature.properties.address != "NA") {
             popupContent += `<br> ${feature.properties.address}`;
         }
-        if (feature.properties.opfocus != "NA" && feature.properties.opfocus != 0 && feature.properties.opfocus != "") {
-            popupContent += `<br> Focus: ${feature.properties.opfocus}`;
+        if (feature.properties.operationalFocus != "NA" && feature.properties.operationalFocus != 0 && feature.properties.operationalFocus != "") {
+            popupContent += `<br> Focus: ${feature.properties.operationalFocus}`;
+        }
+        if (feature.properties.populationFocus != "NA" && feature.properties.populationFocus != 0 && feature.properties.populationFocus != "") {
+            popupContent += `<br> Population Focus: ${feature.properties.populationFocus}`;
         }
         if (feature.properties.phone != "NA") {
             //popupContent += '<br>' + feature.properties.phone;
@@ -1280,14 +1202,26 @@
             const services = servicesFull
                 .map(longName => getAbbreviationFromDatabse(longName))
                 .filter(abv => abv !== null);
+            const primaryService = getAbbreviationFromDatabse(item.PrimaryService);
+            const secondaryService = getAbbreviationFromDatabse(item.SecondaryService);
+            const tertiaryService = getAbbreviationFromDatabse(item.TertiaryService);
+            const opFocus = getAbbreviationFromDatabse(item.OperationalFocus);
+            const popFocus = getAbbreviationFromDatabse(item.PopulationFocus);
 
             var pointNameURL = encodeURIComponent(pointName);
             // Check if item.Description exists, isn't null, and isn't "0" or 0
             var descriptionChunk = (item.Description && item.Description !== '0' && item.Description !== 0)
                 ? `\n${item.Description}\n`
                 : '';
-            var titleData = pointName + '\n' + item.FullAddress + '\n' + '<a href=?service=' + encodeURIComponent(item.PrimaryService) + '>' + item.PrimaryService + '</a>' + '\n' + descriptionChunk + '\n';
-            var searchData = partnerName + item.ZipCode + item.PrimaryService + item.SecondaryService + item.TertiaryService + descriptionChunk;
+            var titleData = item.FullAddress + '\n' + item.OperationalFocus;
+            var detailData = pointName + '\n' + item.FullAddress + '\n' + 'Primary Service: <a href=?service=' + encodeURIComponent(primaryService) + '>' + item.PrimaryService + '</a>';
+            if (secondaryService) { detailData += '\n' + 'Secondary Service: <a href=?service=' + encodeURIComponent(secondaryService) + '>' + item.SecondaryService + '</a>' }
+            if (tertiaryService) { detailData += '\n' + 'Other Service: <a href=?service=' + encodeURIComponent(tertiaryService) + '>' + item.TertiaryService + '</a>' }
+            if (opFocus) { detailData += '\n' + 'Focus: <a href=?opfocus=' + encodeURIComponent(opFocus) + '>' + item.OperationalFocus + '</a>' }
+            if (popFocus) { detailData += '\n' + 'Focus Population: <a href=?population=' + encodeURIComponent(popFocus) + '>' + item.PopulationFocus + '</a>' }
+            detailData += '\n' + descriptionChunk + '\n';
+
+            var searchData = partnerName + item.ZipCode + item.PrimaryService + item.SecondaryService + item.TertiaryService + item.PopulationFocus + descriptionChunk;
             itemSearchList.innerHTML += `
                     <li class="item" title="${titleData}" data-search='${searchData}'> 
                         <div class="item-main">
@@ -1295,7 +1229,7 @@
                             <button type="button" class="details-toggle" onclick="toggleDetails(this)">Show details</button>
                         </div>
                         <div class="item-details">
-                            ${titleData}
+                            ${detailData}
                         </div>
                     </li>`;
 
@@ -1315,8 +1249,12 @@
                     , email: `${item.Email}`
                     , website: `${item.Website}`
                     , description: `${item.Description}`
-                    , opfocus: `${item.OperationalFocus}`
-                    , icon: `${item.Icon}`
+                    , opfocus: `${opFocus}`
+                    , operationalFocus: `${item.OperationalFocus}`
+                    , population: `${popFocus}`
+                    , populationFocus: `${item.PopulationFocus}`
+                    //, icon: `${item.Icon}`
+                    , icon: `${opFocus}`
                     , primaryService: `${item.PrimaryService}`
                     , secondaryService: `${item.SecondaryService}`
                     , tertiaryService: `${item.TertiaryService}`
@@ -1340,9 +1278,10 @@
                         const lon = feature.geometry.coordinates[0];
                         const lat = feature.geometry.coordinates[1];
                         //var icon = feature.properties.icon;
-                        icon = getAbbreviationFromDatabse(feature.properties.opfocus);
+                        //icon = getAbbreviationFromDatabse(feature.properties.opfocus);
+                        icon = feature.properties.icon;
 
-                        if (icon == null) {
+                        if (icon == null || icon == 'null') {
                             icon = "unknown";
                         }
 
@@ -1364,6 +1303,8 @@
 
         if (partnerDataLayer.getBounds().isValid()) {
             map.fitBounds(partnerDataLayer.getBounds());
+        } else {
+            console.log("NO MATCHES FOUND!")
         }
 
         console.log("Constructed GeoJSON Object:", partnerDataGJSN);
@@ -1490,7 +1431,20 @@
         });
         console.log("Done processing map filters. Setting bounds...");
         // Zoom the map to the manually calculated bounds
-        map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+        //map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+        try {
+            // Attempt to fit the map to the bounds
+            map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+        } catch (error) {
+            // Check if it's the specific error you're looking for
+            if (error.message && error.message.includes("Bounds are not valid")) {
+                //displayNoMatchesMessage();
+                showTimedNotice('No Matches Found!', 'Please try your search again...');
+            } else {
+                // Log any other unexpected errors to the console
+                console.error("An unexpected map error occurred:", error);
+            }
+        }
     }
     //#endregion
 
@@ -1510,16 +1464,23 @@
         try {
             // Make sure all data is loaded first
             console.log("Waiting for data stream...");
-            await waitForLayer(); // 1. PAUSE right here until partnerDataLayer is fully built and loaded
+            //await waitForLayer(); // 1. PAUSE right here until partnerDataLayer is fully built and loaded
+            //partnerDataLayer, serviceDataJSN, opDataJSN, popDataJSN
+            await waitForData(() => serviceDataJSN); // 1. PAUSE right here until partnerDataLayer is fully built and loaded
+            await waitForData(() => opDataJSN);
+            await waitForData(() => popDataJSN);
+            await waitForData(() => partnerDataLayer);
             console.log("Data layer is confirmed ready. Processing features now.");
 
             setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
-            filterContentByMatch(urlParams);
         } catch (error) {
             console.error("Could not process map filters:", error.message);
         } finally {
             hideLoadingNotice();
         }
+
+        filterContentByMatch(urlParams);
+
     });
     //#endregion <!-- Javascript Listeners - Also process get/post here -->
 

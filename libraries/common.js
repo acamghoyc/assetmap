@@ -51,8 +51,8 @@ function hideLoadingNotice() {
 
 //#endregion Loading Notice
 
-// be called using funky syntax, i.e. waitForData(() => serviceDataJSN)
-function waitForData(getTarget, timeoutMs = 20000) {
+// called using funky syntax, i.e. waitForData(() => serviceDataJSN)
+function waitForData(getTarget, timeoutMs = 30000) {
     return new Promise((resolve, reject) => {
         const startTime = Date.now();
 
@@ -70,5 +70,48 @@ function waitForData(getTarget, timeoutMs = 20000) {
                 reject(new Error("Timeout: target failed to load."));
             }
         }, 100);
+    });
+}
+
+async function loadCSVData(filePath, forceUpdate = false) {
+    return new Promise((resolve, reject) => {
+        // Create a unique cache key based on the specific file path (e.g., "cached_zipData.csv")
+        const cacheKey = `cached_${filePath}`;
+
+        // 1. Check the session cache if a force update isn't requested
+        if (!forceUpdate) {
+            const cachedData = sessionStorage.getItem(cacheKey);
+            if (cachedData) {
+                console.log(`Loading ${filePath} from sessionStorage cache...`);
+                return resolve(JSON.parse(cachedData));
+            }
+        } else {
+            console.log(`Force update requested. Bypassing cache for ${filePath}...`);
+        }
+
+        // 2. Cache miss or forced update: Run Papa.parse to download the file
+        console.log(`Fetching and parsing fresh file: ${filePath}`);
+        Papa.parse(filePath, {
+            download: true,       // Tells Papa Parse to fetch the file via HTTP
+            header: true,         // Converts rows into JavaScript objects using the header row keys
+            skipEmptyLines: true, // Cleanly skips blank lines at the end of the file
+
+            complete: function (results) {
+                try {
+                    // 3. Cache the newly retrieved data in sessionStorage
+                    sessionStorage.setItem(cacheKey, JSON.stringify(results.data));
+                } catch (cacheError) {
+                    // Fail silently on caching if storage limit is exceeded, so the app still runs
+                    console.warn(`Failed to write ${filePath} to sessionStorage:`, cacheError);
+                }
+
+                // Return the data
+                resolve(results.data);
+            },
+
+            error: function (error) {
+                reject(new Error(`Failed to parse CSV file: ${error.message}`));
+            }
+        });
     });
 }

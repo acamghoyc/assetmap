@@ -219,6 +219,7 @@
         }
     </style>
     <!-- Load common libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="./libraries/common.js" defer></script>
 </head>
 
@@ -243,7 +244,10 @@
                     <label for="zipcode">ZIP Code</label>
                     <input type="text" id="zipcode" placeholder="e.g. 77002" maxlength="5" pattern="\d{5}"
                         onkeydown="handleEnter(event, 1)">
-                    <div class=" error-message" id="zipError">Please enter a valid 5-digit ZIP code.
+                    <div class=" error-message" id="zipValidationError">Please enter a valid 5-digit ZIP code.
+                    </div>
+                    <div class=" error-message" id="zipError">GHOYC focuses on the Greater Houston area. Please call 311
+                        for help.
                     </div>
                 </div>
                 <div class="btn-container">
@@ -259,7 +263,7 @@
                         onkeydown="handleEnter(event, 2)">
                     <div class=" error-message" id="ageError">Please enter a valid age.</div>
                     <div class="error-message" id="ageRangeError">
-                        GHOYC focuses on young people ages 13-24. Please check 311 for help
+                        GHOYC focuses on young people ages 13-24. Please call 311 for help.
                         <a href="https://my311.houstontx.gov/" target="_blank"
                             rel="noopener noreferrer">https://my311.houstontx.gov/</a>
                     </div>
@@ -333,8 +337,10 @@
         var serviceDataJSN;
         var POP_FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/eb77c19c9c684594b7d9bcad5de664c2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=OhqNdqS6dV-CQ0KM3f4P1kx5bz9YJYk6PPwakHIIKks";
         var popDataJSN;
+        var zipData;
 
-        async function initData(forceUpdate = false) {
+        //async function initData(forceUpdate = false) {
+        async function collectData(forceUpdate = false) {
             // Get services first, because should be quick and painless
             try {
                 console.log("Fetching Power Automate service data...");
@@ -375,6 +381,9 @@
             } catch (error) {
                 console.error("Critical error fetching or processing Power Automate flow population data:", error);
             }
+            console.log("Getting zip code data...");
+            zipData = await loadCSVData('zipData.csv', forceUpdate);
+            console.log("Zip code data loaded.");
         }
 
         function renderServiceCheckboxes() {
@@ -448,8 +457,12 @@
 
             if (step === 1) {
                 const zipInput = document.getElementById('zipcode').value;
+                const zipMatch = zipData.find(item => item.GEOID20 === zipInput);
                 const zipError = document.getElementById('zipError');
                 if (!/^\d{5}$/.test(zipInput)) {
+                    zipError.style.display = 'block';
+                    isValid = false;
+                } else if (!zipMatch) {
                     zipError.style.display = 'block';
                     isValid = false;
                 } else {
@@ -522,7 +535,11 @@
             //params.append('logic', 'and');
 
             // Commas separating values is standard, or you can append multiple identical keys
-            params.append('service', checkedServices.join(','));
+            //params.append('service', checkedServices.join(','));
+            // If checkedServices = ['tutoring', 'dropout']
+            checkedServices.forEach(service => {
+                params.append('service', service);
+            });
 
             params.append('population', checkedPopulation.join(','));
 
@@ -543,15 +560,19 @@
         //#endregion Base Code
 
         //#region Run any functions needed to load data
-        initData();
+        ///initData();
         //#endregioin Run any functions needed to load data
 
         //#region <!-- Javascript Listeners - Also process get/post here -->
+        const forceUpdate = false;
         // Wait until DOMContentLoaded
-        // document.addEventListener("DOMContentLoaded", function () {
-        //     // Automatically click the default open tab when the page loads
-        //     document.getElementById("defaultOpenB").click();
-        // });
+        document.addEventListener("DOMContentLoaded", async function () {
+            try {
+                await collectData(forceUpdate);
+            } catch (err) {
+                console.error("Initialization data collection failed:", err);
+            }
+        });
         window.addEventListener('load', async (event) => {
             console.log('The page and all resources have fully loaded!'); //Not true
             showLoadingNotice('Loading data', 'Fetching services…');
@@ -561,10 +582,10 @@
 
             try {
                 // Make sure all data is loaded first
-                console.log("Waiting for data stream...");
-                await waitForData(() => serviceDataJSN); // PAUSE right here until serviceDataJSN is fully loaded
-                await waitForData(() => popDataJSN);
-                console.log("Data is confirmed ready. Processing features now.");
+                //console.log("Waiting for data stream...");
+                //await waitForData(() => serviceDataJSN); // PAUSE right here until serviceDataJSN is fully loaded
+                //await waitForData(() => popDataJSN);
+                //console.log("Data is confirmed ready. Processing features now.");
 
                 //setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
                 //filterContentByMatch(urlParams);

@@ -17,13 +17,9 @@
     <!-- Include Leaflet JavaScript file -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <!-- Include Papa Parse JavaScript file to handle csv files -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <!-- Load common libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="./libraries/common.js" defer></script>
 
     <!-- Style settings for mobile, take up whole screen -->
@@ -271,49 +267,6 @@
     //#region <!-- Utility functions -->
 
     const loadingNotice = document.getElementById('loadingNotice');
-
-    function loadCSVData(filePath, forceUpdate = false) {
-        return new Promise((resolve, reject) => {
-            // Create a unique cache key based on the specific file path (e.g., "cached_zipData.csv")
-            const cacheKey = `cached_${filePath}`;
-
-            // 1. Check the session cache if a force update isn't requested
-            if (!forceUpdate) {
-                const cachedData = sessionStorage.getItem(cacheKey);
-                if (cachedData) {
-                    console.log(`Loading ${filePath} from sessionStorage cache...`);
-                    return resolve(JSON.parse(cachedData));
-                }
-            } else {
-                console.log(`Force update requested. Bypassing cache for ${filePath}...`);
-            }
-
-            // 2. Cache miss or forced update: Run Papa.parse to download the file
-            console.log(`Fetching and parsing fresh file: ${filePath}`);
-            Papa.parse(filePath, {
-                download: true,       // Tells Papa Parse to fetch the file via HTTP
-                header: true,         // Converts rows into JavaScript objects using the header row keys
-                skipEmptyLines: true, // Cleanly skips blank lines at the end of the file
-
-                complete: function (results) {
-                    try {
-                        // 3. Cache the newly retrieved data in sessionStorage
-                        sessionStorage.setItem(cacheKey, JSON.stringify(results.data));
-                    } catch (cacheError) {
-                        // Fail silently on caching if storage limit is exceeded, so the app still runs
-                        console.warn(`Failed to write ${filePath} to sessionStorage:`, cacheError);
-                    }
-
-                    // Return the data
-                    resolve(results.data);
-                },
-
-                error: function (error) {
-                    reject(new Error(`Failed to parse CSV file: ${error.message}`));
-                }
-            });
-        });
-    }
 
     function toggleDetails(button) {
         // Find the closest list item (li) parent
@@ -780,7 +733,7 @@
     function getIcon(iconName, lat, lon) {
         if (iconName == "circleMarker") {
             return L.circleMarker(L.latLng(lat, lon), {
-                radius: 6,
+                radius: 10,
                 fillColor: '#ff7800',
                 color: '#001',
                 weight: 1,
@@ -832,6 +785,7 @@
             } else {
                 console.warn(`No icon found for: ${iconName}. Using default.`);
                 var curMrkr = L.marker(L.latLng(lat, lon), { icon: unknownIcon });
+                //var curMrkr = L.marker(L.latLng(lat, lon), { icon: circleMarker });
                 return curMrkr;
             }
         }
@@ -998,7 +952,9 @@
 
     async function collectData(forceUpdate = false) {
         // Load CSV data for zip codes
-        zipData = await loadCSVData('zipData.csv', forceUpdate);
+        (async () => {
+            zipData = await loadCSVData('zipData.csv', forceUpdate);
+        })();
         try {
             console.log("Fetching Power Automate service data...");
             var serviceDataJSNstr = sessionStorage.getItem('serviceDataJSNstr'); // try to get cached data
@@ -1070,13 +1026,10 @@
             console.error("Error initializing icons:", err);
         }
 
-        initMapData();
+        initMapData(forceUpdate);
 
         initSearch();
     }
-
-    const forceUpdate = false;
-    collectData(forceUpdate);
 
     //#endregion <!-- Collect Sharepoint and CSV Data, create icons -->
 
@@ -1185,8 +1138,21 @@
     };
     let partnerDataLayer;
 
-    async function initMapData() {
-
+    async function buildpartnerDataGJSN(forceUpdate = false) {
+        try {
+            console.log("Fetching partnerDataGJSN...");
+            var partnerDataGJSNstr = sessionStorage.getItem('partnerDataGJSNstr'); // try to get cached data
+            if (partnerDataGJSNstr && !forceUpdate) { //# not found, retrieve from SharePoint
+                console.log("partnerDataGJSNstr found in session. parsing data...");
+                partnerDataGJSN = JSON.parse(partnerDataGJSNstr);
+                console.log("Exiting buildpartnerDataGJSN.");
+                return;
+            } else {
+                console.log("partnerDataGJSN NOT found in session. Building...");
+            }
+        } catch (error) {
+            console.error("Critical error fetching partnerDataGJSN:", error);
+        }
         partnerDataJSN.items.forEach(function (item, index) {
             //Object.keys(partnerDataJSN.items).forEach(function (key, index) {
             const lat = item.Lat;
@@ -1215,18 +1181,26 @@
                 : '';
             var titleData = item.FullAddress + '\n' + item.OperationalFocus;
             var detailData = pointName + '\n' + item.FullAddress + '\n' + 'Primary Service: <a href=?service=' + encodeURIComponent(primaryService) + '>' + item.PrimaryService + '</a>';
+            var searchDisplay = `<a href=?pointName=${pointNameURL}> ${pointName} </a>`
             if (secondaryService) { detailData += '\n' + 'Secondary Service: <a href=?service=' + encodeURIComponent(secondaryService) + '>' + item.SecondaryService + '</a>' }
             if (tertiaryService) { detailData += '\n' + 'Other Service: <a href=?service=' + encodeURIComponent(tertiaryService) + '>' + item.TertiaryService + '</a>' }
-            if (opFocus) { detailData += '\n' + 'Focus: <a href=?opfocus=' + encodeURIComponent(opFocus) + '>' + item.OperationalFocus + '</a>' }
-            if (popFocus) { detailData += '\n' + 'Focus Population: <a href=?population=' + encodeURIComponent(popFocus) + '>' + item.PopulationFocus + '</a>' }
+            if (opFocus) {
+                //detailData += '\n' + 'Focus: <a href=?opfocus=' + encodeURIComponent(opFocus) + '>' + item.OperationalFocus + '</a>';
+                searchDisplay += `<br> &emsp;&emsp; <a href=?opfocus=${opFocus}> ${item.OperationalFocus} </a>`
+            }
+            if (popFocus) {
+                //detailData += '\n' + 'Focus Population: <a href=?population=' + encodeURIComponent(popFocus) + '>' + item.PopulationFocus + '</a>';
+                searchDisplay += `<br> &emsp;&emsp; <a href=?population=${popFocus}> ${item.PopulationFocus} </a>`;
+            }
             detailData += '\n' + descriptionChunk + '\n';
+            //if (descriptionChunk) { detailData += '\n' + descriptionChunk + '\n'; }
 
             var searchData = partnerName + item.ZipCode + item.PrimaryService + item.SecondaryService + item.TertiaryService + item.PopulationFocus + descriptionChunk;
             itemSearchList.innerHTML += `
                     <li class="item" title="${titleData}" data-search='${searchData}'> 
                         <div class="item-main">
-                            <a href=?pointName=${pointNameURL}> ${pointName} </a>
                             <button type="button" class="details-toggle" onclick="toggleDetails(this)">Show details</button>
+                            ${searchDisplay}
                         </div>
                         <div class="item-details">
                             ${detailData}
@@ -1264,8 +1238,15 @@
                 id: item.ID
             });
         });
+        console.log("Storing partnerDataGJSN...")
+        sessionStorage.setItem('partnerDataGJSNstr', JSON.stringify(partnerDataGJSN));
+    }
 
+    async function initMapData(forceUpdate = false) {
+
+        await buildpartnerDataGJSN(forceUpdate);
         // Wrap the entire initialization into a Promise variable
+        // According to Gemini, this cannot be cached. We need to load it every time. 
         const buildGeoJsonLayer = new Promise((resolve, reject) => {
             try {
                 // 1. Execute your Leaflet initialization logic
@@ -1283,6 +1264,7 @@
 
                         if (icon == null || icon == 'null') {
                             icon = "unknown";
+                            //icon = "circleMarker";
                         }
 
                         var currentIcon = getIcon(icon, lat, lon);
@@ -1307,7 +1289,8 @@
             console.log("NO MATCHES FOUND!")
         }
 
-        console.log("Constructed GeoJSON Object:", partnerDataGJSN);
+        //console.log("Constructed GeoJSON Object:", partnerDataGJSN);
+        //console.log("Constructed partnerDataGJSN:");
 
     }
 
@@ -1449,38 +1432,28 @@
     //#endregion
 
     //#region <!-- Javascript Listeners - Also process get/post here -->
+    const forceUpdate = false;
     // Wait until DOMContentLoaded
-    document.addEventListener("DOMContentLoaded", function () {
-        // Automatically click the default open tab when the page loads
-        document.getElementById("defaultOpenB").click();
-    });
-    window.addEventListener('load', async (event) => {
-        console.log('The page and all resources have fully loaded!'); //Not true
+    document.addEventListener("DOMContentLoaded", async function () {
+
         showLoadingNotice('Loading map data', 'Fetching locations and services…');
 
-        // 2. Parse URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
+        // Automatically click the default open tab when the page loads
+        document.getElementById("defaultOpenB").click();
 
         try {
-            // Make sure all data is loaded first
-            console.log("Waiting for data stream...");
-            //await waitForLayer(); // 1. PAUSE right here until partnerDataLayer is fully built and loaded
-            //partnerDataLayer, serviceDataJSN, opDataJSN, popDataJSN
-            await waitForData(() => serviceDataJSN); // 1. PAUSE right here until partnerDataLayer is fully built and loaded
-            await waitForData(() => opDataJSN);
-            await waitForData(() => popDataJSN);
-            await waitForData(() => partnerDataLayer);
-            console.log("Data layer is confirmed ready. Processing features now.");
-
+            await collectData(forceUpdate);
             setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
-        } catch (error) {
-            console.error("Could not process map filters:", error.message);
+            const urlParams = new URLSearchParams(window.location.search);
+            filterContentByMatch(urlParams);
+        } catch (err) {
+            console.error("Initialization failed:", err);
         } finally {
             hideLoadingNotice();
         }
-
-        filterContentByMatch(urlParams);
-
+    });
+    window.addEventListener('load', async (event) => {
+        console.log('The page resources (stylesheets/images) have fully loaded!');
     });
     //#endregion <!-- Javascript Listeners - Also process get/post here -->
 

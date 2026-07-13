@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Registration Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+
+        .form-container {
+            max-width: 400px;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .checkbox-group {
+            margin: 15px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #0078d4;
+            /* SharePoint Blue */
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #005a9e;
+        }
+
+        #message {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="form-container">
+        <h2>User Registration</h2>
+        <form id="userForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" required placeholder="johndoe">
+            </div>
+
+            <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" id="firstName" required placeholder="John">
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text" id="lastName" required placeholder="Doe">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" required placeholder="john.doe@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="phoneNumber">Phone Number</label>
+                <input type="tel" id="phoneNumber" placeholder="555-123-4567">
+            </div>
+
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="isActive" checked> Is Active User
+                </label>
+            </div>
+
+            <button type="submit">Submit to SharePoint</button>
+        </form>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        // ⚠️ PASTE YOUR POWER AUTOMATE HTTP URL HERE
+        const powerAutomateUrl = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/c961adb64d384b3dbd83b32c37b5ebd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=D259nng9AwP3ATJwgCZ849xPcd5wvChUfOkJ_NkN_Bs";
+
+        document.getElementById('userForm').addEventListener('submit', async function (e) {
+            e.preventDefault(); // Stop the page from reloading
+
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = "Sending...";
+            messageEl.className = "";
+
+            // 1. Gather values from the form inputs
+            const phoneInput = document.getElementById('phoneNumber').value.trim();
+
+            const payload = {
+                username: document.getElementById('username').value.trim(),
+                firstName: document.getElementById('firstName').value.trim(),
+                lastName: document.getElementById('lastName').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                //isActive: document.getElementById('isActive').checked,
+                // Convert empty phone input to null to match your schema exactly
+                phoneNumber: phoneInput ? phoneInput : null
+            };
+
+            // 2. Send the data to your Power Automate flow webhook
+            try {
+                const response = await fetch(powerAutomateUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    messageEl.textContent = "Successfully submitted to SharePoint!";
+                    messageEl.className = "success";
+                    document.getElementById('userForm').reset(); // Clear form fields
+                } else {
+                    messageEl.textContent = "Server error, failed to submit.";
+                    messageEl.className = "error";
+                }
+            } catch (error) {
+                console.error('Submission Error:', error);
+                messageEl.textContent = "Network error. Check your Power Automate URL.";
+                messageEl.className = "error";
+            }
+        });
+    </script>
+
+</body>
+
+</html>

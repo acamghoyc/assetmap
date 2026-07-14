@@ -187,7 +187,7 @@
             background-color: #5a6268;
         }
 
-        .error-message {
+        .error-messAge {
             color: #dc3545;
             font-size: 14px;
             margin-top: 5px;
@@ -241,12 +241,13 @@
                 <strong><i>If this an emergency, please dial 9-1-1.</i></strong>
                 <br><br>
                 <div class="form-group">
-                    <label for="zipcode">ZIP Code</label>
-                    <input type="text" id="zipcode" placeholder="e.g. 77002" maxlength="5" pattern="\d{5}"
+                    <label for="ZipCode">Zip Code</label>
+                    <input type="text" id="ZipCode" placeholder="e.g. 77002" maxlength="5" pattern="\d{5}"
                         onkeydown="handleEnter(event, 1)">
-                    <div class=" error-message" id="zipValidationError">Please enter a valid 5-digit ZIP code.
+                    <div class=" error-messAge" id="ZipCodeValidationError">Please enter a valid 5-digit ZipCode code.
                     </div>
-                    <div class=" error-message" id="zipError">GHOYC focuses on the Greater Houston area. Please call 311
+                    <div class=" error-messAge" id="ZipCodeError">GHOYC focuses on the Greater Houston area. Please call
+                        3-1-1
                         for help.
                     </div>
                 </div>
@@ -258,16 +259,45 @@
             <div class="step" id="step2">
                 <h2>Tell us a bit about yourself</h2>
                 <div class="form-group">
-                    <label for="age">What is your age?</label>
-                    <input type="number" id="age" placeholder="e.g. 25" min="0" max="120"
+                    <label for="Age">What is your Age?</label>
+                    <input type="number" id="Age" placeholder="e.g. 24" min="0" max="120"
                         onkeydown="handleEnter(event, 2)">
-                    <div class=" error-message" id="ageError">Please enter a valid age.</div>
-                    <div class="error-message" id="ageRangeError">
-                        GHOYC focuses on young people ages 13-24. Please call 311 for help.
+                    <div class=" error-messAge" id="AgeError">Please enter a valid Age.</div>
+                    <div class="error-messAge" id="AgeRangeError">
+                        GHOYC focuses on young people Ages 13-24. Please contact 3-1-1 for help.
                         <a href="https://my311.houstontx.gov/" target="_blank"
                             rel="noopener noreferrer">https://my311.houstontx.gov/</a>
                     </div>
                 </div>
+
+                <p> These are optional. </p>
+
+                <div class="form-group">
+                    <label for="FirstName">First Name</label>
+                    <input type="text" id="FirstName" placeholder="John">
+                </div>
+
+                <div class="form-group">
+                    <label for="LastName">Last Name</label>
+                    <input type="text" id="LastName" placeholder="Doe">
+                </div>
+
+                <div class="form-group">
+                    <label for="EmailAddress">Email Address</label>
+                    <input type="email" id="EmailAddress" placeholder="john.doe@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="PhoneNumber">Phone Number</label>
+                    <input type="tel" id="PhoneNumber" placeholder="555-123-4567">
+                </div>
+
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="SMS"> I want to receive text messages.
+                    </label>
+                </div>
+
                 <div class="btn-container">
                     <button type="button" class="btn-prev" onclick="prevStep(2)">Back</button>
                     <button type="button" class="btn-next" onclick="nextStep(2)">Next</button>
@@ -278,19 +308,20 @@
                 <div class="form-group">
                     <label>Select if any apply:</label>
                     <div class="radio-group" id="dynamicPopulationRadio"></div>
-                    <div class="error-message" id="populationError">Please select at least one choice.</div>
+                    <div class="error-messAge" id="populationError">Please select at least one choice.</div>
                 </div>
                 <div class="btn-container">
                     <button type="button" class="btn-prev" onclick="prevStep(3)">Back</button>
                     <button type="button" class="btn-next" onclick="nextStep(3)">Next</button>
                 </div>
             </div>
+            <input type="hidden" id="Population" value="">
 
             <div class="step" id="step4">
                 <div class="form-group">
                     <label>Select all that apply:</label>
                     <div class="checkbox-group" id="dynamicServices"></div>
-                    <div class="error-message" id="serviceError">Please select at least one service.</div>
+                    <div class="error-messAge" id="serviceError">Please select at least one service.</div>
                 </div>
                 <div class="btn-container">
                     <button type="button" class="btn-prev" onclick="prevStep(4)">Back</button>
@@ -313,6 +344,7 @@
     <script>
 
         const loadingNotice = document.getElementById('loadingNotice');
+        var userIP = "0.0.0.0";
 
         //#region - TODO
         // Special Populations
@@ -381,9 +413,9 @@
             } catch (error) {
                 console.error("Critical error fetching or processing Power Automate flow population data:", error);
             }
-            console.log("Getting zip code data...");
+            console.log("Getting Zip Code data...");
             zipData = await loadCSVData('zipData.csv', forceUpdate);
-            console.log("Zip code data loaded.");
+            console.log("ZipCode code data loaded.");
         }
 
         function renderServiceCheckboxes() {
@@ -438,7 +470,8 @@
 
         //#region Base Code
         // Configuration: Change this to your actual mapping application URL
-        const baseUrl = "http://127.0.0.1:5500/asset_map.html";
+        //const baseUrl = "http://127.0.0.1:5500/asset_map.html";
+        const baseUrl = "./asset_map.html";
 
         function nextStep(currentStep) {
             if (validateStep(currentStep)) {
@@ -456,35 +489,35 @@
             let isValid = true;
 
             if (step === 1) {
-                const zipInput = document.getElementById('zipcode').value;
-                const zipMatch = zipData.find(item => item.GEOID20 === zipInput);
-                const zipError = document.getElementById('zipError');
-                if (!/^\d{5}$/.test(zipInput)) {
-                    zipError.style.display = 'block';
+                const ZipCodeInput = document.getElementById('ZipCode').value;
+                const ZipCodeMatch = zipData.find(item => item.GEOID20 === ZipCodeInput);
+                const ZipCodeError = document.getElementById('ZipCodeError');
+                if (!/^\d{5}$/.test(ZipCodeInput)) {
+                    ZipCodeError.style.display = 'block';
                     isValid = false;
-                } else if (!zipMatch) {
-                    zipError.style.display = 'block';
+                } else if (!ZipCodeMatch) {
+                    ZipCodeError.style.display = 'block';
                     isValid = false;
                 } else {
-                    zipError.style.display = 'none';
+                    ZipCodeError.style.display = 'none';
                 }
             }
 
             if (step === 2) {
-                const ageInput = document.getElementById('age').value;
-                const ageError = document.getElementById('ageError');
-                if (ageInput === '' || ageInput < 0 || ageInput > 120) {
-                    ageError.style.display = 'block';
+                const AgeInput = document.getElementById('Age').value;
+                const AgeError = document.getElementById('AgeError');
+                if (AgeInput === '' || AgeInput < 0 || AgeInput > 120) {
+                    AgeError.style.display = 'block';
                     isValid = false;
                 } else {
-                    ageError.style.display = 'none';
+                    AgeError.style.display = 'none';
                 }
-                const ageRangeError = document.getElementById('ageRangeError');
-                if (ageInput < 13 || ageInput > 24) {
-                    ageRangeError.style.display = 'block';
+                const AgeRangeError = document.getElementById('AgeRangeError');
+                if (AgeInput < 13 || AgeInput > 24) {
+                    AgeRangeError.style.display = 'block';
                     isValid = false;
                 } else {
-                    ageError.style.display = 'none';
+                    AgeError.style.display = 'none';
                 }
             }
 
@@ -505,6 +538,7 @@
 
         //TODO: Enable select multiple services
         function submitQuiz() {
+
             const checkedServices = Array.from(document.querySelectorAll('input[name="services"]:checked'))
                 .map(cb => cb.value);
             const serviceError = document.getElementById('serviceError');
@@ -523,15 +557,21 @@
             } else {
                 populationError.style.display = 'none';
             }
+            // store selected population to this hidden element so we can get it more easily
+            document.getElementById('Population').value = checkedPopulation;
+
+            // We should be ready to construct our payload now
+            const payload = constructReferralJSONPayload();
+            sendReferralJSONPayload(payload);
 
             // Gather all values
-            const zip = document.getElementById('zipcode').value;
-            const age = document.getElementById('age').value;
+            const ZipCode = document.getElementById('ZipCode').value;
+            const Age = document.getElementById('Age').value;
 
             // Build URL parameters cleanly using URLSearchParams (handles encoding automatically)
             const params = new URLSearchParams();
-            params.append('zip', zip);
-            //params.append('age', age);
+            params.append('zip', ZipCode);
+            //params.append('Age', Age);
             //params.append('logic', 'and');
 
             // Commas separating values is standard, or you can append multiple identical keys
@@ -552,9 +592,9 @@
             document.getElementById('step5').classList.add('active');
 
             document.getElementById('result').innerText = finalUrl;
-            document.getElementById('linkContainer').innerHTML = `
-            <a href="${finalUrl}" target="_blank" class="map-link">Open Interactive Map</a>
-        `;
+            // target="_blank" causes a new window to open, but also clears session variables
+            //document.getElementById('linkContainer').innerHTML = `<a href="${finalUrl}" target="_blank" class="map-link">Open Interactive Map</a>`;
+            document.getElementById('linkContainer').innerHTML = `<a href="${finalUrl}" class="map-link">Open Interactive Map</a>`;
         }
 
         //#endregion Base Code
@@ -572,6 +612,7 @@
             } catch (err) {
                 console.error("Initialization data collection failed:", err);
             }
+            userIP = await getIPAddress();
         });
         window.addEventListener('load', async (event) => {
             console.log('The page and all resources have fully loaded!'); //Not true
@@ -587,10 +628,10 @@
                 //await waitForData(() => popDataJSN);
                 //console.log("Data is confirmed ready. Processing features now.");
 
-                //setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
+                //setLoadingNoticeMessAge('Preparing your view', 'Applying selections…');
                 //filterContentByMatch(urlParams);
             } catch (error) {
-                console.error("Could not process external data:", error.message);
+                console.error("Could not process external data:", error.messAge);
             } finally {
                 hideLoadingNotice();
             }

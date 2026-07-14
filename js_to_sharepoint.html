@@ -75,6 +75,10 @@
             color: red;
         }
     </style>
+
+    <!-- Load common libraries -->
+    <script src="./libraries/common.js" defer></script>
+
 </head>
 
 <body>
@@ -82,46 +86,80 @@
     <div class="form-container">
         <h2>User Registration</h2>
         <form id="userForm">
+
+            <!-- <div class="form-group">
+                <label for="Username">Username</label>
+                <input type="text" id="Username" placeholder="Sam123">
+            </div> -->
+
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" required placeholder="johndoe">
+                <label for="FirstName">First Name</label>
+                <input type="text" id="FirstName" required placeholder="John">
             </div>
 
             <div class="form-group">
-                <label for="firstName">First Name</label>
-                <input type="text" id="firstName" required placeholder="John">
+                <label for="LastName">Last Name</label>
+                <input type="text" id="LastName" placeholder="Doe">
             </div>
 
             <div class="form-group">
-                <label for="lastName">Last Name</label>
-                <input type="text" id="lastName" required placeholder="Doe">
+                <label for="EmailAddress">Email Address</label>
+                <input type="email" id="EmailAddress" placeholder="john.doe@example.com">
             </div>
 
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" required placeholder="john.doe@example.com">
+                <label for="Age">Age</label>
+                <input type="text" id="Age" placeholder="24">
             </div>
 
             <div class="form-group">
-                <label for="phoneNumber">Phone Number</label>
-                <input type="tel" id="phoneNumber" placeholder="555-123-4567">
+                <label for="PhoneNumber">Phone Number</label>
+                <input type="tel" id="PhoneNumber" placeholder="555-123-4567">
             </div>
 
             <div class="checkbox-group">
                 <label>
-                    <input type="checkbox" id="isActive" checked> Is Active User
+                    <input type="checkbox" id="SMS" checked> I want to receive text messages.
                 </label>
             </div>
 
-            <button type="submit">Submit to SharePoint</button>
+            <div class="form-group">
+                <label for="ZipCode">Zip Code</label>
+                <input type="text" id="ZipCode" placeholder="77002">
+            </div>
+
+            <div class="Population">
+                <label for="Population">Population</label>
+                <input type="text" id="Population" placeholder="Foster Youth">
+            </div>
+
+            <div class="Services">
+                <label for="Services">Services</label>
+                <input type="text" id="Services" placeholder="Tutoring">
+            </div>
+
+            <div class="ReferralOrganization">
+                <label for="ReferralOrganization">Referral Organization</label>
+                <input type="text" id="ReferralOrganization" placeholder="ACAM">
+            </div>
+
+            <button type="submit">Submit</button>
         </form>
 
         <div id="message"></div>
     </div>
 
     <script>
-        // ⚠️ PASTE YOUR POWER AUTOMATE HTTP URL HERE
+
+        var userIP
+
         const powerAutomateUrl = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/17/workflows/c961adb64d384b3dbd83b32c37b5ebd5/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=D259nng9AwP3ATJwgCZ849xPcd5wvChUfOkJ_NkN_Bs";
+
+        // 2. Run the fetch immediately when the page loads
+        window.addEventListener('DOMContentLoaded', async () => {
+            userIP = await getIPAddress();
+            //console.log("IP Address pre-loaded:", userIP);
+        });
 
         document.getElementById('userForm').addEventListener('submit', async function (e) {
             e.preventDefault(); // Stop the page from reloading
@@ -130,42 +168,57 @@
             messageEl.textContent = "Sending...";
             messageEl.className = "";
 
-            // 1. Gather values from the form inputs
-            const phoneInput = document.getElementById('phoneNumber').value.trim();
+            const payload = await constructReferralJSONPayload();
 
-            const payload = {
-                username: document.getElementById('username').value.trim(),
-                firstName: document.getElementById('firstName').value.trim(),
-                lastName: document.getElementById('lastName').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                //isActive: document.getElementById('isActive').checked,
-                // Convert empty phone input to null to match your schema exactly
-                phoneNumber: phoneInput ? phoneInput : null
-            };
+            // const payload = {
+            //     //UserName: document.getElementById('UserName').value.trim(),
+            //     FirstName: document.getElementById('FirstName').value.trim(),
+            //     LastName: document.getElementById('LastName').value.trim(),
+            //     EmailAddress: document.getElementById('EmailAddress').value.trim(),
+            //     Age: parseInt(document.getElementById('Age').value.trim(), 10),
+            //     PhoneNumber: document.getElementById('PhoneNumber').value.trim(),
+            //     SMS: document.getElementById('SMS').checked,
+            //     ZipCode: parseInt(document.getElementById('ZipCode').value.trim(), 10),
+            //     Population: document.getElementById('Population').value.trim(),
+            //     Services: [document.getElementById('Services').value.trim()],
+            //     ReferralOrganization: document.getElementById('ReferralOrganization').value.trim(),
+            //     ReferralDate: new Date().toISOString(),
+            //     IPAddress: userIP
+            // };
 
             // 2. Send the data to your Power Automate flow webhook
             try {
-                const response = await fetch(powerAutomateUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (response.ok) {
-                    messageEl.textContent = "Successfully submitted to SharePoint!";
-                    messageEl.className = "success";
-                    document.getElementById('userForm').reset(); // Clear form fields
-                } else {
-                    messageEl.textContent = "Server error, failed to submit.";
-                    messageEl.className = "error";
-                }
+                sendReferralJSONPayload(payload);
+                messageEl.textContent = "Successfully submitted to SharePoint!";
             } catch (error) {
                 console.error('Submission Error:', error);
                 messageEl.textContent = "Network error. Check your Power Automate URL.";
                 messageEl.className = "error";
             }
+
+
+            // try {
+            //     const response = await fetch(powerAutomateUrl, {
+            //         method: 'POST',
+            //         headers: {
+            //             'Content-Type': 'application/json'
+            //         },
+            //         body: JSON.stringify(payload)
+            //     });
+
+            //     if (response.ok) {
+            //         messageEl.textContent = "Successfully submitted to SharePoint!";
+            //         messageEl.className = "success";
+            //         document.getElementById('userForm').reset(); // Clear form fields
+            //     } else {
+            //         messageEl.textContent = "Server error, failed to submit.";
+            //         messageEl.className = "error";
+            //     }
+            // } catch (error) {
+            //     console.error('Submission Error:', error);
+            //     messageEl.textContent = "Network error. Check your Power Automate URL.";
+            //     messageEl.className = "error";
+            // }
         });
     </script>
 

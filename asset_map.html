@@ -196,60 +196,71 @@
 
 </head>
 
-<!-- Greyscale Toggle HTML -->
-<!-- <input type="checkbox" id="theme-toggle" class="toggle-checkbox">
+<body>
+
+    <!-- Greyscale Toggle HTML -->
+    <!-- <input type="checkbox" id="theme-toggle" class="toggle-checkbox">
 <label for="theme-toggle" class="toggle-label">
     <span class="toggle-ball"></span>
 </label> -->
-<!-- Greyscale Toggle HTML -->
+    <!-- Greyscale Toggle HTML -->
 
-<!-- Tabs -->
-<div id="loadingNotice" class="loading-notice" role="status" aria-live="polite">
-    <div class="loading-card">
-        <div class="loading-spinner"></div>
-        <div class="loading-copy">
-            <div class="loading-title">Loading map data</div>
-            <div class="loading-subtitle">Fetching locations and services…</div>
+    <!-- Tabs -->
+    <div id="loadingNotice" class="loading-notice" role="status" aria-live="polite">
+        <div class="loading-card">
+            <div class="loading-spinner"></div>
+            <div class="loading-copy">
+                <div class="loading-title">Loading map data</div>
+                <div class="loading-subtitle">Fetching locations and services…</div>
+            </div>
         </div>
     </div>
-</div>
-<main class="content">
-    <!-- Tab links -->
-    <div class="tab">
-        <button class="tablinks" onclick="openTab(event, 'Map')" id="defaultOpenB">Map</button>
-        <button class="tablinks" onclick="openTab(event, 'itemSearch')" id="itemSearchB">Search</button>
-        <button class="tablinks" onclick="openTab(event, 'serviceSearch')" id="serviceSearchB">Services</button>
-    </div>
-
-    <!-- Tab content -->
-    <div id="Map" class="tabcontent">
-        <div id="map"></div>
-    </div>
-
-    <div id="itemSearch" class="tabcontent">
-        <!-- Search bar-->
-        <div class="search-container">
-            <!-- Search Input Box -->
-            <input type="search" id="itemSearchBar" placeholder="Search database..." />
-            <p>You may search by organization, city, zip code, service, or population.</p>
-            <!-- JavaScript will inject <li> items here -->
-            <ul id="itemSearchList"></ul>
+    <main class="content">
+        <!-- Tab links -->
+        <div class="tab">
+            <button class="tablinks" onclick="openTab(event, 'Map')" id="defaultOpenB">Map</button>
+            <button class="tablinks" onclick="openTab(event, 'itemSearch')" id="itemSearchB">Search</button>
+            <button class="tablinks" onclick="openTab(event, 'serviceSearch')" id="serviceSearchB">Services</button>
         </div>
-        <!-- <div id="map"></div> -->
-        <!-- <div id="map" style="width: 600px; height: 400px;"></div> -->
-    </div>
 
-    <div id="serviceSearch" class="tabcontent">
-        <div class="search-container">
-            <!-- Search Input Box -->
-            <input type="search" id="serviceSearchBar" placeholder="Search services..." />
-            <!-- JavaScript will inject <li> items here -->
-            <ul id="serviceSearchList"></ul>
+        <!-- Tab content -->
+        <div id="Map" class="tabcontent">
+            <div id="map"></div>
         </div>
-    </div>
 
-</main>
-<!-- Tabs -->
+        <div id="itemSearch" class="tabcontent">
+            <!-- Search bar-->
+            <div class="search-container">
+                <!-- Search Input Box -->
+                <input type="search" id="itemSearchBar" placeholder="Search database..." />
+                <p>You may search by organization, city, zip code, service, or population.</p>
+                <p>You can also use our <a href="./needs_assesment.html">needs assesment</a>.</p>
+                <!-- JavaScript will inject <li> items here -->
+                <ul id="itemSearchList"></ul>
+            </div>
+            <!-- <div id="map"></div> -->
+            <!-- <div id="map" style="width: 600px; height: 400px;"></div> -->
+        </div>
+
+        <div id="serviceSearch" class="tabcontent">
+            <div class="search-container">
+                <!-- Search Input Box -->
+                <input type="search" id="serviceSearchBar" placeholder="Search services..." />
+                <!-- JavaScript will inject <li> items here -->
+                <ul id="serviceSearchList"></ul>
+            </div>
+        </div>
+
+    </main>
+    <!-- Tabs -->
+
+    <!-- Hidden inputs to store input from the user -->
+    <input type="hidden" id="Population" value="">
+    <input type="hidden" id="ServicesStr" value="">
+    <input type="hidden" id="ZipCode" value="">
+    <input type="hidden" id="ReferralOrganization" value="">
+
+</body>
 
 <!-- Load Geojson (shapes) -->
 <!-- Doing this on demand now -->
@@ -267,6 +278,8 @@
     //#region <!-- Utility functions -->
 
     const loadingNotice = document.getElementById('loadingNotice');
+
+    var userIP;
 
     function toggleDetails(button) {
         // Find the closest list item (li) parent
@@ -628,33 +641,41 @@
         if (feature.properties.pointName != "NA") {
             popupContent += `<strong> ${feature.properties.pointName} </strong>`;
         }
-        if (feature.properties.address != "NA") {
-            popupContent += `<br> ${feature.properties.address}`;
+        if (feature.properties.FullAddress != "NA") {
+            popupContent += `<br> ${feature.properties.FullAddress}`;
         }
-        if (feature.properties.operationalFocus != "NA" && feature.properties.operationalFocus != 0 && feature.properties.operationalFocus != "") {
-            popupContent += `<br> Focus: ${feature.properties.operationalFocus}`;
+        if (feature.properties.OperationalFocus != "NA" && feature.properties.OperationalFocus != 0 && feature.properties.OperationalFocus != "") {
+            popupContent += `<br> Focus: ${feature.properties.OperationalFocus}`;
         }
-        if (feature.properties.populationFocus != "NA" && feature.properties.populationFocus != 0 && feature.properties.populationFocus != "") {
-            popupContent += `<br> Population Focus: ${feature.properties.populationFocus}`;
+        if (feature.properties.PopulationFocus != "NA" && feature.properties.PopulationFocus != 0 && feature.properties.PopulationFocus != "") {
+            popupContent += `<br> Population Focus: ${feature.properties.PopulationFocus}`;
         }
-        if (feature.properties.phone != "NA") {
+        if (feature.properties.Phone != "NA") {
             //popupContent += '<br>' + feature.properties.phone;
             //popupContent += '<br><a href=' + feature.properties.phone + '></a>';
-            popupContent += `<br> Call: <a href="tel:${feature.properties.phone}">${feature.properties.phone}</a>`;
-            if (feature.properties.sms == "Yes") {
-                popupContent += `<br> Text: <a href="sms:${feature.properties.phone}">${feature.properties.phone}</a>`;
+            //popupContent += `<br> Call: <a href="tel:${feature.properties.Phone}">${feature.properties.Phone}</a>`;
+            popupContent += `<br> Call: <a href="tel:${feature.properties.Phone}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Phone}</a>`;
+
+            if (feature.properties.SMS == "Yes") {
+                //popupContent += `<br> Text: <a href="sms:${feature.properties.Phone}">${feature.properties.Phone}</a>`;
+                popupContent += `<br> Text: <a href="sms:${feature.properties.Phone}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Phone}</a>`;
             }
         }
-        if (feature.properties.email != "NA") {
+        if (feature.properties.Email != "NA") {
             //popupContent += '<br>' + feature.properties.email;
-            popupContent += `<br><a href="mailto:${feature.properties.email}">${feature.properties.email}</a>`;
+            //popupContent += `<br><a href="mailto:${feature.properties.Email}">${feature.properties.Email}</a>`;
+            //popupContent += `<br><a href="mailto:${feature.properties.Email}" onclick="handleExternalLinkClick(event, '${feature.properties.Email}', '${feature.properties.organization}')">${feature.properties.Email}</a>`;
+            popupContent += `<br><a href="mailto:${feature.properties.Email}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Email}</a>`;
         }
-        if (feature.properties.website != "NA") {
+        if (feature.properties.Website != "NA") {
             //popupContent += '<br>' + feature.properties.website;
-            popupContent += `<br><a href="${feature.properties.website}">${feature.properties.website}</a>`;
+            //popupContent += `<br><a href="${feature.properties.Website}">${feature.properties.Website}</a>`;
+            //popupContent += `<br><a href="${feature.properties.Website}" onclick="handleExternalLinkClick(event, '${feature.properties.Website}', '${feature.properties.organization}')">${feature.properties.Website}</a>`;
+            popupContent += `<br><a href="${feature.properties.Website}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Website}</a>`;
+
         }
-        if (feature.properties.description != "NA" && feature.properties.description != 0 && feature.properties.description != "") {
-            popupContent += '<br><i>' + feature.properties.description + '</i>';
+        if (feature.properties.Description != "NA" && feature.properties.Description != 0 && feature.properties.Description != "") {
+            popupContent += '<br><i>' + feature.properties.Description + '</i>';
         }
         layer.bindPopup(popupContent);
     }
@@ -687,7 +708,6 @@
             feature.properties.pointName = pointName;
 
             var match = zipData.find(item => item.GEOID20 === pointID);
-
 
             oyRate = match ? match.oy_pct : 0;
             youthPop = match ? match.pop_16_24 : 0;
@@ -952,9 +972,10 @@
 
     async function collectData(forceUpdate = false) {
         // Load CSV data for zip codes
-        (async () => {
-            zipData = await loadCSVData('zipData.csv', forceUpdate);
-        })();
+        //(async () => {
+        zipData = await loadCSVData('zipData.csv', forceUpdate);
+        console.log("zipData loaded.")
+        //})();
         try {
             console.log("Fetching Power Automate service data...");
             var serviceDataJSNstr = sessionStorage.getItem('serviceDataJSNstr'); // try to get cached data
@@ -1028,14 +1049,14 @@
 
         initMapData(forceUpdate);
 
-        initSearch();
+        initServiceSearch();
     }
 
     //#endregion <!-- Collect Sharepoint and CSV Data, create icons -->
 
-    //#region <!--Create search lists (other than partner data) and abbreviation database -->
+    //#region <!--Create search lists and abbreviation database -->
 
-    async function initSearch() {
+    async function initServiceSearch() {
         // We should have all the service data now, so we can create our service search
         serviceDataJSN.forEach(element => {
             //console.log(" Abbreviation: ", element.Abbreviation);
@@ -1051,6 +1072,51 @@
                 </li>`;
         });
         console.log("Service search created.");
+    }
+
+    async function initPartnerSearch() {
+        // Create partner search
+        partnerDataGJSN.features.forEach(feature => {
+            const item = feature.properties;
+            var pointNameURL = encodeURIComponent(item.pointName);
+            const opFocus = getAbbreviationFromDatabse(item.OperationalFocus);
+            const popFocus = getAbbreviationFromDatabse(item.PopulationFocus);
+            const primService = getAbbreviationFromDatabse(item.PrimaryService);
+            const secnService = getAbbreviationFromDatabse(item.SecondaryService);
+            const tertService = getAbbreviationFromDatabse(item.TertiaryService);
+            // Check if item.Description exists, isn't null, and isn't "0" or 0
+            var descriptionChunk = (item.Description && item.Description !== '0' && item.Description !== 0)
+                ? `\n${item.Description}\n`
+                : '';
+            var titleData = item.FullAddress + '\n' + item.OperationalFocus;
+            var detailData = item.pointName + '\n' + item.FullAddress + '\n' + 'Primary Service: <a href=?service=' + encodeURIComponent(primService) + '>' + item.PrimaryService + '</a>';
+            var searchDisplay = `<a href=?pointName=${pointNameURL}> ${item.pointName} </a>`
+            if (item.SecondaryService) { detailData += '\n' + 'Secondary Service: <a href=?service=' + encodeURIComponent(secnService) + '>' + item.SecondaryService + '</a>' }
+            if (item.TertiaryService) { detailData += '\n' + 'Other Service: <a href=?service=' + encodeURIComponent(tertService) + '>' + item.TertiaryService + '</a>' }
+            if (opFocus) {
+                //detailData += '\n' + 'Focus: <a href=?opfocus=' + encodeURIComponent(opFocus) + '>' + item.OperationalFocus + '</a>';
+                searchDisplay += `<br> &emsp;&emsp; <a href=?opfocus=${opFocus}> ${item.OperationalFocus} </a>`
+            }
+            if (popFocus) {
+                //detailData += '\n' + 'Focus Population: <a href=?population=' + encodeURIComponent(popFocus) + '>' + item.PopulationFocus + '</a>';
+                searchDisplay += `<br> &emsp;&emsp; <a href=?population=${popFocus}> ${item.PopulationFocus} </a>`;
+            }
+            detailData += '\n' + descriptionChunk + '\n';
+            //if (descriptionChunk) { detailData += '\n' + descriptionChunk + '\n'; }
+
+            var searchData = item.partnerName + item.zip + item.PrimaryService + item.SecondaryService + item.TertiaryService + item.PopulationFocus + descriptionChunk;
+            itemSearchList.innerHTML += `
+                    <li class="item" title="${titleData}" data-search='${searchData}'> 
+                        <div class="item-main">
+                            <button type="button" class="details-toggle" onclick="toggleDetails(this)">Show details</button>
+                            ${searchDisplay}
+                        </div>
+                        <div class="item-details">
+                            ${detailData}
+                        </div>
+                    </li>`;
+        });
+        console.log("Partner search created.");
     }
 
     // The centralized abbreviation registry
@@ -1096,7 +1162,7 @@
         return match || null;
     }
 
-    //#endregion <!--Create search lists (other than partner data) and abbreviation database -->
+    //#endregion <!--Create search lists and abbreviation database -->
 
     //#region <!-- Create Icons -->
 
@@ -1130,7 +1196,7 @@
 
     //#endregion <!-- Create Icons -->
 
-    //#region <!-- Construct GeoJSon AND Create Markers AND Create Search List -->
+    //#region <!-- Construct GeoJSon AND Create Markers -->
 
     var partnerDataGJSN = {
         type: "FeatureCollection",
@@ -1168,44 +1234,14 @@
             const services = servicesFull
                 .map(longName => getAbbreviationFromDatabse(longName))
                 .filter(abv => abv !== null);
-            const primaryService = getAbbreviationFromDatabse(item.PrimaryService);
-            const secondaryService = getAbbreviationFromDatabse(item.SecondaryService);
-            const tertiaryService = getAbbreviationFromDatabse(item.TertiaryService);
+            //const PrimaryService = getAbbreviationFromDatabse(item.PrimaryService);
+            //const SecondaryService = getAbbreviationFromDatabse(item.SecondaryService);
+            //const TertiaryService = getAbbreviationFromDatabse(item.TertiaryService);
+            //const PrimaryService = item.PrimaryService;
+            //const SecondaryService = item.SecondaryService;
+            //const TertiaryService = item.TertiaryService;
             const opFocus = getAbbreviationFromDatabse(item.OperationalFocus);
             const popFocus = getAbbreviationFromDatabse(item.PopulationFocus);
-
-            var pointNameURL = encodeURIComponent(pointName);
-            // Check if item.Description exists, isn't null, and isn't "0" or 0
-            var descriptionChunk = (item.Description && item.Description !== '0' && item.Description !== 0)
-                ? `\n${item.Description}\n`
-                : '';
-            var titleData = item.FullAddress + '\n' + item.OperationalFocus;
-            var detailData = pointName + '\n' + item.FullAddress + '\n' + 'Primary Service: <a href=?service=' + encodeURIComponent(primaryService) + '>' + item.PrimaryService + '</a>';
-            var searchDisplay = `<a href=?pointName=${pointNameURL}> ${pointName} </a>`
-            if (secondaryService) { detailData += '\n' + 'Secondary Service: <a href=?service=' + encodeURIComponent(secondaryService) + '>' + item.SecondaryService + '</a>' }
-            if (tertiaryService) { detailData += '\n' + 'Other Service: <a href=?service=' + encodeURIComponent(tertiaryService) + '>' + item.TertiaryService + '</a>' }
-            if (opFocus) {
-                //detailData += '\n' + 'Focus: <a href=?opfocus=' + encodeURIComponent(opFocus) + '>' + item.OperationalFocus + '</a>';
-                searchDisplay += `<br> &emsp;&emsp; <a href=?opfocus=${opFocus}> ${item.OperationalFocus} </a>`
-            }
-            if (popFocus) {
-                //detailData += '\n' + 'Focus Population: <a href=?population=' + encodeURIComponent(popFocus) + '>' + item.PopulationFocus + '</a>';
-                searchDisplay += `<br> &emsp;&emsp; <a href=?population=${popFocus}> ${item.PopulationFocus} </a>`;
-            }
-            detailData += '\n' + descriptionChunk + '\n';
-            //if (descriptionChunk) { detailData += '\n' + descriptionChunk + '\n'; }
-
-            var searchData = partnerName + item.ZipCode + item.PrimaryService + item.SecondaryService + item.TertiaryService + item.PopulationFocus + descriptionChunk;
-            itemSearchList.innerHTML += `
-                    <li class="item" title="${titleData}" data-search='${searchData}'> 
-                        <div class="item-main">
-                            <button type="button" class="details-toggle" onclick="toggleDetails(this)">Show details</button>
-                            ${searchDisplay}
-                        </div>
-                        <div class="item-details">
-                            ${detailData}
-                        </div>
-                    </li>`;
 
             partnerDataGJSN.features.push({
                 geometry: {
@@ -1216,22 +1252,22 @@
                 properties: {
                     pointName: `${pointName}`
                     , organization: `${partnerName}`
-                    , address: `${item.FullAddress}`
+                    , FullAddress: `${item.FullAddress}`
                     , zip: `${item.ZipCode}`
-                    , phone: `${item.Phone}`
-                    , sms: `${item.SMS}`
-                    , email: `${item.Email}`
-                    , website: `${item.Website}`
-                    , description: `${item.Description}`
+                    , Phone: `${item.Phone}`
+                    , SMS: `${item.SMS}`
+                    , Email: `${item.Email}`
+                    , Website: `${item.Website}`
+                    , Description: `${item.Description}`
                     , opfocus: `${opFocus}`
-                    , operationalFocus: `${item.OperationalFocus}`
+                    , OperationalFocus: `${item.OperationalFocus}`
                     , population: `${popFocus}`
-                    , populationFocus: `${item.PopulationFocus}`
+                    , PopulationFocus: `${item.PopulationFocus}`
                     //, icon: `${item.Icon}`
                     , icon: `${opFocus}`
-                    , primaryService: `${item.PrimaryService}`
-                    , secondaryService: `${item.SecondaryService}`
-                    , tertiaryService: `${item.TertiaryService}`
+                    , PrimaryService: `${item.PrimaryService}`
+                    , SecondaryService: `${item.SecondaryService}`
+                    , TertiaryService: `${item.TertiaryService}`
                     , services: services
                     //, service: `${item.PrimaryService}`
                 },
@@ -1245,6 +1281,7 @@
     async function initMapData(forceUpdate = false) {
 
         await buildpartnerDataGJSN(forceUpdate);
+        initPartnerSearch();
         // Wrap the entire initialization into a Promise variable
         // According to Gemini, this cannot be cached. We need to load it every time. 
         const buildGeoJsonLayer = new Promise((resolve, reject) => {
@@ -1315,6 +1352,7 @@
         if (keysa.includes('service')) {
             // get the indices that match "service"
             let temp = 0
+            var ServicesStr = ""
             const svcIdx = keysa
                 .map((key, index) => key === 'service' ? index : -1)
                 .filter(index => index !== -1);
@@ -1322,8 +1360,9 @@
             //const allServices = urlParams.getAll('service');
             svcIdx.forEach(idx => {
                 serviceCount++;
-                // THIS GETS THE FULL SERVICE NAME, WE DONT NEED THIS ANYMORE?
-                // var val = valsa[idx];
+                var val = valsa[idx];
+                ServicesStr += val + ";";
+
                 // var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
                 // if (match_row != undefined) {
                 //     var match = match_row.Service;
@@ -1331,17 +1370,19 @@
                 // }
                 // valsa[idx] = val;
             });
+            document.getElementById('ServicesStr').value = ServicesStr;
         }
         //Add adjacent zip codes
         if (keysa.includes('zip')) {
             // get the indices that match "zip"
-            let temp = 0
+            //let temp = 0
             const zipIdx = keysa
                 .map((key, index) => key === 'zip' ? index : -1)
                 .filter(index => index !== -1);
             zipIdx.forEach(idx => {
                 zipCount++;
                 var val = valsa[idx];
+                document.getElementById('ZipCode').value = val;
                 var match_row = zipData.find(item => item.ZCTA === val);
                 if (match_row != undefined) {
                     var zipString = match_row.adjacent;
@@ -1350,6 +1391,16 @@
                         valsa.push(zip.trim());
                     });
                 }
+            });
+        }
+        if (keysa.includes('population')) {
+            const popIdx = keysa
+                .map((key, index) => key === 'population' ? index : -1)
+                .filter(index => index !== -1);
+            popIdx.forEach(idx => {
+                //popCount++;
+                var val = valsa[idx];
+                document.getElementById('Population').value = val;
             });
         }
 
@@ -1373,6 +1424,7 @@
                 const hasKey = Object.keys(properties).includes(targetKey);
                 if (hasKey) {
                     targetValue = valsa[i];
+                    if (targetValue.toLowerCase() == "unknown") { continue; }
                     targetValue = decodeURIComponent(targetValue.replace(/\+/g, ' '));
                     targetValue = cleanString(targetValue);
                     var vals = properties[targetKey]; //vals from layer, can be array if services
@@ -1418,14 +1470,17 @@
         try {
             // Attempt to fit the map to the bounds
             map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+            //return true;
         } catch (error) {
             // Check if it's the specific error you're looking for
             if (error.message && error.message.includes("Bounds are not valid")) {
                 //displayNoMatchesMessage();
                 showTimedNotice('No Matches Found!', 'Please try your search again...');
+                return false;
             } else {
                 // Log any other unexpected errors to the console
                 console.error("An unexpected map error occurred:", error);
+                //return false;
             }
         }
     }
@@ -1438,6 +1493,8 @@
 
         showLoadingNotice('Loading map data', 'Fetching locations and services…');
 
+        userIP = await getIPAddress();
+
         // Automatically click the default open tab when the page loads
         document.getElementById("defaultOpenB").click();
 
@@ -1445,11 +1502,13 @@
             await collectData(forceUpdate);
             setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
             const urlParams = new URLSearchParams(window.location.search);
-            filterContentByMatch(urlParams);
+            var success = filterContentByMatch(urlParams);
         } catch (err) {
             console.error("Initialization failed:", err);
         } finally {
+            //if (success === true) {
             hideLoadingNotice();
+            //}
         }
     });
     window.addEventListener('load', async (event) => {

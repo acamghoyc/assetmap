@@ -198,13 +198,6 @@
 
 <body>
 
-    <!-- Greyscale Toggle HTML -->
-    <!-- <input type="checkbox" id="theme-toggle" class="toggle-checkbox">
-<label for="theme-toggle" class="toggle-label">
-    <span class="toggle-ball"></span>
-</label> -->
-    <!-- Greyscale Toggle HTML -->
-
     <!-- Tabs -->
     <div id="loadingNotice" class="loading-notice" role="status" aria-live="polite">
         <div class="loading-card">
@@ -260,852 +253,851 @@
     <input type="hidden" id="ZipCode" value="">
     <input type="hidden" id="ReferralOrganization" value="">
 
-</body>
 
-<!-- Load Geojson (shapes) -->
-<!-- Doing this on demand now -->
-<!-- Load Geojson (shapes) -->
+    <!-- Load Geojson (shapes) -->
+    <!-- Doing this on demand now -->
+    <!-- Load Geojson (shapes) -->
 
-<script defer>
+    <script defer>
 
-    //#region - TODO
-    // What to do when no matches
-    /// ?Expand search to wider zip codes?
-    // Special Populations Exclusive
-    // Link to needs assesment
-    //#endregion - TODO
+        //#region - TODO
+        // What to do when no matches
+        /// ?Expand search to wider zip codes?
+        // Special Populations Exclusive
+        // Link to needs assesment
+        //#endregion - TODO
 
-    //#region <!-- Utility functions -->
+        //#region <!-- Utility functions -->
 
-    const loadingNotice = document.getElementById('loadingNotice');
+        const loadingNotice = document.getElementById('loadingNotice');
 
-    var userIP;
+        var userIP;
 
-    function toggleDetails(button) {
-        // Find the closest list item (li) parent
-        const listItem = button.closest('.item');
+        function toggleDetails(button) {
+            // Find the closest list item (li) parent
+            const listItem = button.closest('.item');
 
-        // Toggle the 'show' class on it
-        listItem.classList.toggle('show');
+            // Toggle the 'show' class on it
+            listItem.classList.toggle('show');
 
-        // Optional: Change the button text based on state
-        if (listItem.classList.contains('show')) {
-            button.textContent = 'Hide details';
-        } else {
-            button.textContent = 'Show details';
-        }
-    }
-
-    // This replaces all variations of spaces (including non-breaking spaces) with a standard space
-    function cleanString(str) {
-        return str.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
-    }
-
-    function getType(value) {
-        return Object.prototype.toString.call(value).slice(8, -1);
-    }
-
-    function addUniqueValue(array, item) {
-        if (!array.includes(item)) {
-            array.push(item);
-        }
-    }
-
-    function waitForLayer(timeoutMs = 30000) {
-        return new Promise((resolve, reject) => {
-            const startTime = Date.now();
-
-            const checkInterval = setInterval(() => {
-                // Check if the layer variable exists and has been populated
-                if ((typeof partnerDataLayer !== 'undefined' && partnerDataLayer !== null) && (typeof serviceDataJSN !== 'undefined' && serviceDataJSN !== null)) {
-                    clearInterval(checkInterval);
-                    resolve(partnerDataLayer); // Success! Proceed.
-                }
-
-                // Prevent an infinite loop if the server data completely fails
-                if (Date.now() - startTime > timeoutMs) {
-                    clearInterval(checkInterval);
-                    reject(new Error("Timeout: partnerDataLayer failed to load within the specified time limit."));
-                }
-            }, 100); // Check every 100 milliseconds
-        });
-    }
-
-    //#endregion
-
-    //#region <!-- Initialize Map -->
-    var map = L.map('map').setView([29.760, -95.370], 9); // Houston
-    // const map = L.map('map').setView([39.74739, -105], 13); // Denver
-    //const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
-    //const osm = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
-    const cartoRVMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20,
-        minZoom: 0
-    });
-    cartoRVMap.addTo(map);
-
-    //#endregion
-
-
-    //#region <!-- Setup Icons -->
-    var greenIcon = new L.Icon({
-        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        shadowSize: [41, 41]
-    });
-    const placeIcon = L.Icon.extend({
-        options: {
-            //shadowUrl: './img/leaf-shadow.png',
-            iconSize: [25, 25],
-            //shadowSize: [50, 64],
-            //iconAnchor: [22, 94],
-            //shadowAnchor: [4, 62],
-            popupAnchor: [0, -20]
-        }
-    });
-    // const artIcon = new placeIcon({ iconUrl: './img/art.svg' });
-    // const churchIcon = new placeIcon({ iconUrl: './img/church.svg' });
-    // const collegeIcon = new placeIcon({ iconUrl: './img/college.svg' });
-    // const commerceIcon = new placeIcon({ iconUrl: './img/commerce.svg' });
-    // const hammerIcon = new placeIcon({ iconUrl: './img/hammer.svg' });
-    // const houseIcon = new placeIcon({ iconUrl: './img/house.svg' });
-    // const policyIcon = new placeIcon({ iconUrl: './img/policy.svg' });
-    // const serviceIcon = new placeIcon({ iconUrl: './img/service.svg' });
-    // const trainingIcon = new placeIcon({ iconUrl: './img/training.svg' });
-    // //const unknownIcon = new placeIcon({ iconUrl: './img/question.svg' });
-    const unknownIcon = new placeIcon({ iconUrl: './img/unknown.svg' });
-
-    var glowingIconTest = L.icon({
-        iconUrl: './img/unknown.svg',
-        iconSize: [25, 41],
-        iconAnchor: [12, 41],
-        popupAnchor: [1, -34],
-        className: 'pulsating-icon' // Attach your custom CSS class here
-    });
-
-    function setGlowOnMarkerTheLeafletWay(marker) {
-        const currentIcon = marker.options.icon;
-        if (!currentIcon) return;
-
-        const existingClasses = currentIcon.options.className || '';
-
-        // Use your specific 'placeIcon' class constructor here!
-        const glowingIcon = new placeIcon({
-            ...currentIcon.options,
-            className: `${existingClasses} glow`.trim()
-        });
-
-        marker.setIcon(glowingIcon);
-    }
-
-    //#endregion
-
-    //#region <!-- Add layers -->
-    //const osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-    //    maxZoom: 19,
-    //    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
-    //});
-    const baseLayers = {
-        //'OpenStreetMap': osm
-        cartoRVMap: cartoRVMap
-        //, 'OpenStreetMap.HOT': osmHOT
-        //, 'OpenStreetMap.TEST1': osmTEST1
-        //, 'OpenStreetMap.TEST2': osmTEST2
-        //, 'OpenStreetMap.TEST3': osmTEST3
-    };
-
-    // SHAPES
-    var shapesLG = L.layerGroup();
-    const pumasLGC = L.layerGroup(); // Just a dummy to add checkbox
-    //const pumasLayer = L.geoJSON(pumaCluster, {}).addTo(pumasLG);
-    //var pumasLayer = L.geoJSON();
-    const zipsLGC = L.layerGroup(); // Just a dummy to add checkbox
-    //var zipsLayer = L.geoJSON();
-    var shapesLayer = L.geoJSON();
-    // SHAPES
-
-    var zipShapes; // This will be set to GeoJSJON later from zips.js
-    var pumaShapes; // This will be set to GeoJSJON later from pumas.js
-    var zipData; // This will be set to GeoJSJON later from ???
-    //NOTE: Currently NOT using this as availble data was jumbled together in enriched pumas -> pumasE.js
-    var pumaData; // This will be set to GeoJSJON later from ???
-
-    var content = L.layerGroup().addTo(map); //master layer group
-    //var clearSwitch = L.layerGroup(); //dummy layer group to clear out everything
-
-    const locations = L.layerGroup();
-
-    const layerMap = new Map();
-
-    let defaultOverlay = "locations";
-    if (defaultOverlay == "locations") {
-        locations.addTo(content);
-    }
-
-    const layerControl = L.control.layers(baseLayers).addTo(map);
-    //layerControl.addOverlay(clearSwitch, 'Clear');
-    layerControl.addOverlay(locations, 'Show All Locations');
-
-    // SHAPES
-    layerControl.addOverlay(pumasLGC, 'Show PUMAs');
-    layerControl.addOverlay(zipsLGC, 'Show Zip Codes');
-    // SHAPES
-
-    // // Add layer after the fact
-    // const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-    //     maxZoom: 19,
-    //     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-    // });
-    // layerControl.addBaseLayer(openTopoMap, 'OpenTopoMap');
-    // // Example using 'light_all' (Positron)
-    // var cartoLAMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
-    //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    //     subdomains: 'abcd',
-    //     maxZoom: 20,
-    //     minZoom: 0
-    // });
-    // layerControl.addBaseLayer(cartoLAMap, 'cartoLAMap');
-    // var cartoDAMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
-    //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    //     subdomains: 'abcd',
-    //     maxZoom: 20,
-    //     minZoom: 0
-    // });
-    // layerControl.addBaseLayer(cartoDAMap, 'cartoDAMap');
-    // var cartoRVMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
-    //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    //     subdomains: 'abcd',
-    //     maxZoom: 20,
-    //     minZoom: 0
-    // });
-    // layerControl.addBaseLayer(cartoRVMap, 'cartoRVMap');
-    //#endregion
-
-    //#region <!-- JS to handle overlays -->
-
-    let isProgrammaticChange = false;
-
-    // 1. Central Reset Function
-    function uncheckAllOverlays() {
-        isProgrammaticChange = true; // Block event tracking to prevent infinite loops
-
-        // Loop through your main layer Map
-        layerMap.forEach(function (layer) {
-            // Explicitly remove the structural layers from the map.
-            // Leaflet catches this call and automatically unchecks their checkboxes!
-            if (map.hasLayer(layer)) {
-                map.removeLayer(layer);
+            // Optional: Change the button text based on state
+            if (listItem.classList.contains('show')) {
+                button.textContent = 'Hide details';
+            } else {
+                button.textContent = 'Show details';
             }
-        });
-
-        // Wipe the visual content container clean
-        content.clearLayers();
-        //zipsLG.clearLayers(); //TODO: Find a better way to do this
-        shapesLG.clearLayers();
-
-        // Collect all the checkbox label blocks inside the Leaflet Control menu
-        const labels = document.querySelectorAll('.leaflet-control-layers-overlays label');
-        labels.forEach(function (label) {
-            const labelText = label.textContent.trim();
-            const checkbox = label.querySelector('input[type="checkbox"]');
-            // If the box is currently checked, programmatically click it!
-            // This instantly updates the UI and naturally fires Leaflet's layer-remove logic.
-            if (checkbox && checkbox.checked) {
-                checkbox.click();
-            }
-        });
-
-        // Explicitly uncheck the "Clear" checkbox itself so it pops back to empty
-        //if (map.hasLayer(clearSwitch)) {
-        //    map.removeLayer(clearSwitch);
-        //}
-
-        info.remove(); // remove little info window
-
-        isProgrammaticChange = false; // Restore manual listener state
-    }
-
-    // 2. Master GET Routing Variable Function
-    function enableOverlay(overlayName, disableAll) {
-        const curLayer = layerMap.get(overlayName);
-        if (!curLayer) return;
-
-        if (disableAll) {
-            uncheckAllOverlays();
         }
 
-        isProgrammaticChange = true;
-        curLayer.addTo(map); // Automatically handles checking the correct box natively
-        isProgrammaticChange = false;
+        // This replaces all variations of spaces (including non-breaking spaces) with a standard space
+        function cleanString(str) {
+            return str.replace(/\u00A0/g, ' ').replace(/\s+/g, ' ').trim();
+        }
 
-        rebuildMasterContent(); // Re-compile the visible markers
-    }
+        function getType(value) {
+            return Object.prototype.toString.call(value).slice(8, -1);
+        }
 
-    // 3. Central Multi-Layer Intersection Compiler
-    function rebuildMasterContent() {
-        content.clearLayers(); // Wipe out old visual frames
-        const uniqueMarkersToRender = new Set();
-        const activeGroups = [];
-
-        // Dynamically find which structural toggle layers Leaflet considers active
-        layerMap.forEach(function (layer) {
-            if (map.hasLayer(layer)) {
-                activeGroups.push(layer);
+        function addUniqueValue(array, item) {
+            if (!array.includes(item)) {
+                array.push(item);
             }
-        });
+        }
 
-        // Safely extract markers into a unique Set to solve duplication overlapping
-        activeGroups.forEach(function (subLayer) {
-            subLayer.eachLayer(function (marker) {
-                uniqueMarkersToRender.add(marker);
+        function waitForLayer(timeoutMs = 30000) {
+            return new Promise((resolve, reject) => {
+                const startTime = Date.now();
+
+                const checkInterval = setInterval(() => {
+                    // Check if the layer variable exists and has been populated
+                    if ((typeof partnerDataLayer !== 'undefined' && partnerDataLayer !== null) && (typeof serviceDataJSN !== 'undefined' && serviceDataJSN !== null)) {
+                        clearInterval(checkInterval);
+                        resolve(partnerDataLayer); // Success! Proceed.
+                    }
+
+                    // Prevent an infinite loop if the server data completely fails
+                    if (Date.now() - startTime > timeoutMs) {
+                        clearInterval(checkInterval);
+                        reject(new Error("Timeout: partnerDataLayer failed to load within the specified time limit."));
+                    }
+                }, 100); // Check every 100 milliseconds
             });
-        });
-
-        // Populate the master visible frame layer with the filtered markers
-        uniqueMarkersToRender.forEach(function (marker) {
-            marker.addTo(content);
-        });
-    }
-
-
-    // 4. Fixed Unified Event Routing Bridge
-    map.on("overlayadd overlayremove", async function (event) {
-        if (isProgrammaticChange) return; // Drop processing if our code triggered the change
-
-        // If a human clicked the "Clear" checkbox option
-        if (event.name === "Clear" && event.type === "overlayadd") {
-            uncheckAllOverlays();
-            return; // Exit early, uncheckAllOverlays handled everything
         }
 
-        // if (event.name === "Zips" && event.type === "overlayremove") {
-        //     zipsLG.clearLayers(); //TODO: This works, but we shouldn't have to do this manually
-        //     return;
-        // }
+        //#endregion
 
-        //TODO: This works, but we shouldn't have to do this manually
-        if ((event.name === "Show Zip Codes" || event.name === "Show PUMAs") && event.type === "overlayremove") {
+        //#region <!-- Initialize Map -->
+        var map = L.map('map').setView([29.760, -95.370], 9); // Houston
+        // const map = L.map('map').setView([39.74739, -105], 13); // Denver
+        //const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+        //const osm = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+        const cartoRVMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20,
+            minZoom: 0
+        });
+        cartoRVMap.addTo(map);
+
+        //#endregion
+
+
+        //#region <!-- Setup Icons -->
+        var greenIcon = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41]
+        });
+        const placeIcon = L.Icon.extend({
+            options: {
+                //shadowUrl: './img/leaf-shadow.png',
+                iconSize: [25, 25],
+                //shadowSize: [50, 64],
+                //iconAnchor: [22, 94],
+                //shadowAnchor: [4, 62],
+                popupAnchor: [0, -20]
+            }
+        });
+        // const artIcon = new placeIcon({ iconUrl: './img/art.svg' });
+        // const churchIcon = new placeIcon({ iconUrl: './img/church.svg' });
+        // const collegeIcon = new placeIcon({ iconUrl: './img/college.svg' });
+        // const commerceIcon = new placeIcon({ iconUrl: './img/commerce.svg' });
+        // const hammerIcon = new placeIcon({ iconUrl: './img/hammer.svg' });
+        // const houseIcon = new placeIcon({ iconUrl: './img/house.svg' });
+        // const policyIcon = new placeIcon({ iconUrl: './img/policy.svg' });
+        // const serviceIcon = new placeIcon({ iconUrl: './img/service.svg' });
+        // const trainingIcon = new placeIcon({ iconUrl: './img/training.svg' });
+        // //const unknownIcon = new placeIcon({ iconUrl: './img/question.svg' });
+        const unknownIcon = new placeIcon({ iconUrl: './img/unknown.svg' });
+
+        var glowingIconTest = L.icon({
+            iconUrl: './img/unknown.svg',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            className: 'pulsating-icon' // Attach your custom CSS class here
+        });
+
+        function setGlowOnMarkerTheLeafletWay(marker) {
+            const currentIcon = marker.options.icon;
+            if (!currentIcon) return;
+
+            const existingClasses = currentIcon.options.className || '';
+
+            // Use your specific 'placeIcon' class constructor here!
+            const glowingIcon = new placeIcon({
+                ...currentIcon.options,
+                className: `${existingClasses} glow`.trim()
+            });
+
+            marker.setIcon(glowingIcon);
+        }
+
+        //#endregion
+
+        //#region <!-- Add layers -->
+        //const osmHOT = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        //    maxZoom: 19,
+        //    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
+        //});
+        const baseLayers = {
+            //'OpenStreetMap': osm
+            cartoRVMap: cartoRVMap
+            //, 'OpenStreetMap.HOT': osmHOT
+            //, 'OpenStreetMap.TEST1': osmTEST1
+            //, 'OpenStreetMap.TEST2': osmTEST2
+            //, 'OpenStreetMap.TEST3': osmTEST3
+        };
+
+        // SHAPES
+        var shapesLG = L.layerGroup();
+        const pumasLGC = L.layerGroup(); // Just a dummy to add checkbox
+        //const pumasLayer = L.geoJSON(pumaCluster, {}).addTo(pumasLG);
+        //var pumasLayer = L.geoJSON();
+        const zipsLGC = L.layerGroup(); // Just a dummy to add checkbox
+        //var zipsLayer = L.geoJSON();
+        var shapesLayer = L.geoJSON();
+        // SHAPES
+
+        var zipShapes; // This will be set to GeoJSJON later from zips.js
+        var pumaShapes; // This will be set to GeoJSJON later from pumas.js
+        var zipData; // This will be set to GeoJSJON later from ???
+        //NOTE: Currently NOT using this as availble data was jumbled together in enriched pumas -> pumasE.js
+        var pumaData; // This will be set to GeoJSJON later from ???
+
+        var content = L.layerGroup().addTo(map); //master layer group
+        //var clearSwitch = L.layerGroup(); //dummy layer group to clear out everything
+
+        const locations = L.layerGroup();
+
+        const layerMap = new Map();
+
+        let defaultOverlay = "locations";
+        if (defaultOverlay == "locations") {
+            locations.addTo(content);
+        }
+
+        const layerControl = L.control.layers(baseLayers).addTo(map);
+        //layerControl.addOverlay(clearSwitch, 'Clear');
+        layerControl.addOverlay(locations, 'Show All Locations');
+
+        // SHAPES
+        layerControl.addOverlay(pumasLGC, 'Show PUMAs');
+        layerControl.addOverlay(zipsLGC, 'Show Zip Codes');
+        // SHAPES
+
+        // // Add layer after the fact
+        // const openTopoMap = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        //     maxZoom: 19,
+        //     attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        // });
+        // layerControl.addBaseLayer(openTopoMap, 'OpenTopoMap');
+        // // Example using 'light_all' (Positron)
+        // var cartoLAMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
+        //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        //     subdomains: 'abcd',
+        //     maxZoom: 20,
+        //     minZoom: 0
+        // });
+        // layerControl.addBaseLayer(cartoLAMap, 'cartoLAMap');
+        // var cartoDAMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
+        //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        //     subdomains: 'abcd',
+        //     maxZoom: 20,
+        //     minZoom: 0
+        // });
+        // layerControl.addBaseLayer(cartoDAMap, 'cartoDAMap');
+        // var cartoRVMap = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}' + (L.Browser.retina ? '@2x.png' : '.png'), {
+        //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        //     subdomains: 'abcd',
+        //     maxZoom: 20,
+        //     minZoom: 0
+        // });
+        // layerControl.addBaseLayer(cartoRVMap, 'cartoRVMap');
+        //#endregion
+
+        //#region <!-- JS to handle overlays -->
+
+        let isProgrammaticChange = false;
+
+        // 1. Central Reset Function
+        function uncheckAllOverlays() {
+            isProgrammaticChange = true; // Block event tracking to prevent infinite loops
+
+            // Loop through your main layer Map
+            layerMap.forEach(function (layer) {
+                // Explicitly remove the structural layers from the map.
+                // Leaflet catches this call and automatically unchecks their checkboxes!
+                if (map.hasLayer(layer)) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Wipe the visual content container clean
+            content.clearLayers();
+            //zipsLG.clearLayers(); //TODO: Find a better way to do this
             shapesLG.clearLayers();
+
+            // Collect all the checkbox label blocks inside the Leaflet Control menu
+            const labels = document.querySelectorAll('.leaflet-control-layers-overlays label');
+            labels.forEach(function (label) {
+                const labelText = label.textContent.trim();
+                const checkbox = label.querySelector('input[type="checkbox"]');
+                // If the box is currently checked, programmatically click it!
+                // This instantly updates the UI and naturally fires Leaflet's layer-remove logic.
+                if (checkbox && checkbox.checked) {
+                    checkbox.click();
+                }
+            });
+
+            // Explicitly uncheck the "Clear" checkbox itself so it pops back to empty
+            //if (map.hasLayer(clearSwitch)) {
+            //    map.removeLayer(clearSwitch);
+            //}
+
             info.remove(); // remove little info window
-            return;
+
+            isProgrammaticChange = false; // Restore manual listener state
         }
 
-        // 2. Check if the specific layer that needs zipShapes.js was just turned ON
-        if ((event.name === "Show Zip Codes" || event.name === "Show PUMAs") && event.type === "overlayadd") {
-            try {
-                console.log("Shape layer turned on. Fetching: ", event.name);
-                //await loadGJSNScript('zipShapes.js'); // Waits for script to fully load
-                //console.log("zipShapes.js is ready!");
-                //addZipData();
-                //var layerName = event.name.toLowerCase();
-                var layerName = event.name;
-                await addGJSNData(layerName);
-                console.log(layerName, " <- is ready!");
-            } catch (error) {
-                console.error("Could not load js dependency:", error);
+        // 2. Master GET Routing Variable Function
+        function enableOverlay(overlayName, disableAll) {
+            const curLayer = layerMap.get(overlayName);
+            if (!curLayer) return;
+
+            if (disableAll) {
+                uncheckAllOverlays();
             }
-            info.addTo(map); // add little info window
+
+            isProgrammaticChange = true;
+            curLayer.addTo(map); // Automatically handles checking the correct box natively
+            isProgrammaticChange = false;
+
+            rebuildMasterContent(); // Re-compile the visible markers
         }
 
-        // Otherwise, a human toggled standard checkboxes. Recompile what markers to show.
-        rebuildMasterContent();
-    });
+        // 3. Central Multi-Layer Intersection Compiler
+        function rebuildMasterContent() {
+            content.clearLayers(); // Wipe out old visual frames
+            const uniqueMarkersToRender = new Set();
+            const activeGroups = [];
 
-    //#endregion
+            // Dynamically find which structural toggle layers Leaflet considers active
+            layerMap.forEach(function (layer) {
+                if (map.hasLayer(layer)) {
+                    activeGroups.push(layer);
+                }
+            });
 
-    //#region <!-- Script to get Location -->
-    function onLocationFound(e) {
-        var radius = e.accuracy; L.marker(e.latlng).addTo(map).bindPopup("You are within " + radius + " meters from this point").openPopup();
-        L.circle(e.latlng, radius).addTo(map);
-    }
-    function onLocationError(e) {
-        //alert(e.message); 
-    }
-    map.on('locationerror', onLocationError);
-    map.on('locationfound', onLocationFound);
-    map.locate({ setView: true, maxZoom: 16 });
-    //#endregion
+            // Safely extract markers into a unique Set to solve duplication overlapping
+            activeGroups.forEach(function (subLayer) {
+                subLayer.eachLayer(function (marker) {
+                    uniqueMarkersToRender.add(marker);
+                });
+            });
 
-    //#region <!-- Function to configure popups -->
-    function onEachFeature(feature, layer) {
-        //let popupContent = `<p>Geometry type: ${feature.geometry.type}!</p>`;
-        let popupContent = ``;
-        //if (feature.properties && feature.properties.popupContent) {
-        //    popupContent += feature.properties.popupContent;
-        //}
-        if (feature.properties.pointName != "NA") {
-            popupContent += `<strong> ${feature.properties.pointName} </strong>`;
-        }
-        if (feature.properties.FullAddress != "NA") {
-            popupContent += `<br> ${feature.properties.FullAddress}`;
-        }
-        if (feature.properties.OperationalFocus != "NA" && feature.properties.OperationalFocus != 0 && feature.properties.OperationalFocus != "") {
-            popupContent += `<br> Focus: ${feature.properties.OperationalFocus}`;
-        }
-        if (feature.properties.PopulationFocus != "NA" && feature.properties.PopulationFocus != 0 && feature.properties.PopulationFocus != "") {
-            popupContent += `<br> Population Focus: ${feature.properties.PopulationFocus}`;
-        }
-        if (feature.properties.Phone != "NA") {
-            //popupContent += '<br>' + feature.properties.phone;
-            //popupContent += '<br><a href=' + feature.properties.phone + '></a>';
-            //popupContent += `<br> Call: <a href="tel:${feature.properties.Phone}">${feature.properties.Phone}</a>`;
-            popupContent += `<br> Call: <a href="tel:${feature.properties.Phone}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Phone}</a>`;
-
-            if (feature.properties.SMS == "Yes") {
-                //popupContent += `<br> Text: <a href="sms:${feature.properties.Phone}">${feature.properties.Phone}</a>`;
-                popupContent += `<br> Text: <a href="sms:${feature.properties.Phone}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Phone}</a>`;
-            }
-        }
-        if (feature.properties.Email != "NA") {
-            //popupContent += '<br>' + feature.properties.email;
-            //popupContent += `<br><a href="mailto:${feature.properties.Email}">${feature.properties.Email}</a>`;
-            //popupContent += `<br><a href="mailto:${feature.properties.Email}" onclick="handleExternalLinkClick(event, '${feature.properties.Email}', '${feature.properties.organization}')">${feature.properties.Email}</a>`;
-            popupContent += `<br><a href="mailto:${feature.properties.Email}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Email}</a>`;
-        }
-        if (feature.properties.Website != "NA") {
-            //popupContent += '<br>' + feature.properties.website;
-            //popupContent += `<br><a href="${feature.properties.Website}">${feature.properties.Website}</a>`;
-            //popupContent += `<br><a href="${feature.properties.Website}" onclick="handleExternalLinkClick(event, '${feature.properties.Website}', '${feature.properties.organization}')">${feature.properties.Website}</a>`;
-            popupContent += `<br><a href="${feature.properties.Website}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Website}</a>`;
-
-        }
-        if (feature.properties.Description != "NA" && feature.properties.Description != 0 && feature.properties.Description != "") {
-            popupContent += '<br><i>' + feature.properties.Description + '</i>';
-        }
-        layer.bindPopup(popupContent);
-    }
-
-    function onEachFeatureShapes(feature, layer) {
-
-        layer.on({
-            mouseover: highlightFeature,
-            mouseout: resetHighlight
-            //click: zoomToFeature
-        });
-
-        const propertyNames = Object.keys(feature.properties);
-        const thirdKeyName = propertyNames[2];
-        const fourthKeyName = propertyNames[3];
-
-        let pointID = 0;
-        let pointName = "NA";
-
-        let oyTotal = 0;
-        let oyRate = 0;
-        let oyDensity = 0;
-
-        var landAreaSM = feature.properties.ALAND20; // square meters
-        var landArea = (landAreaSM / 2589988.1103).toFixed(2);
-
-        if (thirdKeyName == 'GEOID20') { // reading zips.js
-            pointID = feature.properties.GEOID20;
-            pointName = feature.properties.ZCTA5CE20;
-            feature.properties.pointName = pointName;
-
-            var match = zipData.find(item => item.GEOID20 === pointID);
-
-            oyRate = match ? match.oy_pct : 0;
-            youthPop = match ? match.pop_16_24 : 0;
-            oyTotal = (youthPop * oyRate).toFixed(0);
-            oyDensity = (oyTotal / landArea).toFixed(1);
-            oyRate = (oyRate * 100).toFixed(1);
-            feature.properties.density = oyDensity;
-
-        } else { //reading pumas.js
-            pointID = feature.properties[fourthKeyName];
-            //pointName = feature.properties.CLQW;
-            //var match = pumaData.find(item => item.NAMELSAD20 === pointID);
-            //var match = pumaShapes.find(item => item.NAMELSAD20 === pointID);
-            //pointName = match ? match.NAMELSAD20 : "NA";
-            pointName = feature.properties.NAMELSAD20;
-            oyTotal = feature.properties._dy_total;
-            oyRate = feature.properties._dy_rate;
-            oyDensity = (oyTotal / landArea).toFixed(1);
-            feature.properties.density = oyDensity;
-            feature.properties.pointName = pointName;
-        }
-
-        //let popupContent = `<p>Geometry type: ${feature.geometry.type}!</p>`;
-        let popupContent = '';
-        if (pointName != "NA") {
-            popupContent += `<strong> ${pointName} </strong>`;
-        }
-        popupContent += `<br> Opportunity Youth: ${oyTotal}`;
-        popupContent += `<br> Disconnection Rate: ${oyRate} %`;
-        popupContent += `<br> Land Area: ${landArea} mi²`;
-        popupContent += `<br> Density: ${oyDensity} OY per mi²`;
-        layer.bindPopup(popupContent);
-
-        // Update style so color will reflect density we just calculated
-        const updatedStyle = style(feature);
-        layer.setStyle(updatedStyle);
-    }
-
-    //#endregion
-
-    //#region <!-- Function to get icon dynamically -->
-    // returns a marker
-    function getIcon(iconName, lat, lon) {
-        if (iconName == "circleMarker") {
-            return L.circleMarker(L.latLng(lat, lon), {
-                radius: 10,
-                fillColor: '#ff7800',
-                color: '#001',
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8
+            // Populate the master visible frame layer with the filtered markers
+            uniqueMarkersToRender.forEach(function (marker) {
+                marker.addTo(content);
             });
         }
-        // else if (iconName == "art") {
-        //     return L.marker(L.latLng(lat, lon), { icon: artIcon });
-        // }
-        // else if (iconName == "church") {
-        //     return L.marker(L.latLng(lat, lon), { icon: churchIcon });
-        // }
-        // else if (iconName == "college") {
-        //     return L.marker(L.latLng(lat, lon), { icon: collegeIcon });
-        // }
-        // else if (iconName == "commerce") {
-        //     return L.marker(L.latLng(lat, lon), { icon: commerceIcon });
-        // }
-        // else if (iconName == "hammer") {
-        //     return L.marker(L.latLng(lat, lon), { icon: hammerIcon });
-        // }
-        // else if (iconName == "house") {
-        //     return L.marker(L.latLng(lat, lon), { icon: houseIcon });
-        // }
-        // else if (iconName == "policy") {
-        //     return L.marker(L.latLng(lat, lon), { icon: policyIcon });
-        // }
-        // else if (iconName == "service") {
-        //     return L.marker(L.latLng(lat, lon), { icon: serviceIcon });
-        // }
-        // else if (iconName == "training") {
-        //     return L.marker(L.latLng(lat, lon), { icon: trainingIcon });
-        // }
-        // else {
-        //     var curMrkr = L.marker(L.latLng(lat, lon), { icon: unknownIcon });
-        //     //return curMrkr;
-        //     //var glowMrkr = setGlowOnMarkerTheLeafletWay(curMrkr);
-        //     //return glowMrkr;
-        //     //return setGlowOnMarkerTheLeafletWay(L.marker(L.latLng(lat, lon), { icon: unknownIcon }));
-        //     //var curMrkr = L.marker(L.latLng(lat, lon), { icon: glowingIconTest });
-        //     return curMrkr;
-        // }
-        else {
-            // Look up the matching pre-created Leaflet icon
-            var matchingIcon = mapIcons[iconName];
-            if (matchingIcon) {
-                return L.marker(L.latLng(lat, lon), { icon: matchingIcon });
-            } else {
-                console.warn(`No icon found for: ${iconName}. Using default.`);
-                var curMrkr = L.marker(L.latLng(lat, lon), { icon: unknownIcon });
-                //var curMrkr = L.marker(L.latLng(lat, lon), { icon: circleMarker });
-                return curMrkr;
+
+
+        // 4. Fixed Unified Event Routing Bridge
+        map.on("overlayadd overlayremove", async function (event) {
+            if (isProgrammaticChange) return; // Drop processing if our code triggered the change
+
+            // If a human clicked the "Clear" checkbox option
+            if (event.name === "Clear" && event.type === "overlayadd") {
+                uncheckAllOverlays();
+                return; // Exit early, uncheckAllOverlays handled everything
             }
-        }
-    }
-    //#endregion
 
-    //#region <!-- JS for tabs -->
+            // if (event.name === "Zips" && event.type === "overlayremove") {
+            //     zipsLG.clearLayers(); //TODO: This works, but we shouldn't have to do this manually
+            //     return;
+            // }
 
-    function openTab(evt, tabName) {
-        // Declare all variables
-        var i, tabcontent, tablinks;
-
-        // Get all elements with class="tabcontent" and hide them
-        tabcontent = document.getElementsByClassName("tabcontent");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
-        }
-
-        // Get all elements with class="tablinks" and remove the class "active"
-        tablinks = document.getElementsByClassName("tablinks");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
-        }
-
-        // // Show the current tab, and add an "active" class to the button that opened the tab
-        document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
-
-        if (tabName === "Map") {
-            map.invalidateSize();
-            map.setView([29.760, -95.370], 10); // Houston
-            //map.setView([39.74739, -105], 13); // Denver
-        }
-        if (tabName === "itemSearch") {
-            //map.invalidateSize();
-            //map.setView([30.267, -97.743], 10); // Austin
-        }
-        if (tabName === "serviceSearch") {
-            //map.invalidateSize();
-            //map.setView([35.6764, 139.6500], 10); // Tokyo
-        }
-    }
-    //#endregion
-
-    //#region <!-- JS for watermark -->
-    L.Control.Watermark = L.Control.extend({
-        onAdd: function (map) {
-            var img = L.DomUtil.create('img');
-
-            img.src = './img/OYCACAM.webp';
-            img.style.width = '200px';
-
-            return img;
-        },
-
-        onRemove: function (map) {
-            // Nothing to do here
-        }
-    });
-    L.control.watermark = function (opts) {
-        return new L.Control.Watermark(opts);
-    }
-    L.control.watermark({ position: 'bottomleft' }).addTo(map);
-    //#endregion
-
-    //#region <!-- JS for glow, select, show popup -->
-
-    // works, but must wait for full map to be loaded
-    function findMarkerByName(searchName) {
-        let foundLayer = null;
-
-        partnerDataLayer.eachLayer(function (layer) {
-            if (layer.feature && layer.feature.properties && layer.feature.properties.name === searchName) {
-                foundLayer = layer;
-                return foundLayer;
+            //TODO: This works, but we shouldn't have to do this manually
+            if ((event.name === "Show Zip Codes" || event.name === "Show PUMAs") && event.type === "overlayremove") {
+                shapesLG.clearLayers();
+                info.remove(); // remove little info window
+                return;
             }
+
+            // 2. Check if the specific layer that needs zipShapes.js was just turned ON
+            if ((event.name === "Show Zip Codes" || event.name === "Show PUMAs") && event.type === "overlayadd") {
+                try {
+                    console.log("Shape layer turned on. Fetching: ", event.name);
+                    //await loadGJSNScript('zipShapes.js'); // Waits for script to fully load
+                    //console.log("zipShapes.js is ready!");
+                    //addZipData();
+                    //var layerName = event.name.toLowerCase();
+                    var layerName = event.name;
+                    await addGJSNData(layerName);
+                    console.log(layerName, " <- is ready!");
+                } catch (error) {
+                    console.error("Could not load js dependency:", error);
+                }
+                info.addTo(map); // add little info window
+            }
+
+            // Otherwise, a human toggled standard checkboxes. Recompile what markers to show.
+            rebuildMasterContent();
         });
 
-        return foundLayer;
-    }
+        //#endregion
 
-    // NOT TESTED
-    function openMarkerPopup(markerName) {
-        let curMrkr = null;
-        // Get marker somehow?
-        curMrkr.openPopup();
-    }
+        //#region <!-- Script to get Location -->
+        function onLocationFound(e) {
+            var radius = e.accuracy; L.marker(e.latlng).addTo(map).bindPopup("You are within " + radius + " meters from this point").openPopup();
+            L.circle(e.latlng, radius).addTo(map);
+        }
+        function onLocationError(e) {
+            //alert(e.message); 
+        }
+        map.on('locationerror', onLocationError);
+        map.on('locationfound', onLocationFound);
+        map.locate({ setView: true, maxZoom: 16 });
+        //#endregion
 
-    // NOT TESTED
-    function makeMarkerPulse(markerName) {
-        let curMrkr = null;
-        // Get marker somehow?
-        curMrkr._icon.classList.add('pulsating-icon'); // works via css
-    }
+        //#region <!-- Function to configure popups -->
+        function onEachFeature(feature, layer) {
+            //let popupContent = `<p>Geometry type: ${feature.geometry.type}!</p>`;
+            let popupContent = ``;
+            //if (feature.properties && feature.properties.popupContent) {
+            //    popupContent += feature.properties.popupContent;
+            //}
+            if (feature.properties.pointName != "NA") {
+                popupContent += `<strong> ${feature.properties.pointName} </strong>`;
+            }
+            if (feature.properties.FullAddress != "NA") {
+                popupContent += `<br> ${feature.properties.FullAddress}`;
+            }
+            if (feature.properties.OperationalFocus != "NA" && feature.properties.OperationalFocus != 0 && feature.properties.OperationalFocus != "") {
+                popupContent += `<br> Focus: ${feature.properties.OperationalFocus}`;
+            }
+            if (feature.properties.PopulationFocus != "NA" && feature.properties.PopulationFocus != 0 && feature.properties.PopulationFocus != "") {
+                popupContent += `<br> Population Focus: ${feature.properties.PopulationFocus}`;
+            }
+            if (feature.properties.Phone != "NA") {
+                //popupContent += '<br>' + feature.properties.phone;
+                //popupContent += '<br><a href=' + feature.properties.phone + '></a>';
+                //popupContent += `<br> Call: <a href="tel:${feature.properties.Phone}">${feature.properties.Phone}</a>`;
+                popupContent += `<br> Call: <a href="tel:${feature.properties.Phone}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Phone}</a>`;
 
-    // 2. The Zoom Listener
-    //map.on('zoomend', function () {
-    //});
+                if (feature.properties.SMS == "Yes") {
+                    //popupContent += `<br> Text: <a href="sms:${feature.properties.Phone}">${feature.properties.Phone}</a>`;
+                    popupContent += `<br> Text: <a href="sms:${feature.properties.Phone}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Phone}</a>`;
+                }
+            }
+            if (feature.properties.Email != "NA") {
+                //popupContent += '<br>' + feature.properties.email;
+                //popupContent += `<br><a href="mailto:${feature.properties.Email}">${feature.properties.Email}</a>`;
+                //popupContent += `<br><a href="mailto:${feature.properties.Email}" onclick="handleExternalLinkClick(event, '${feature.properties.Email}', '${feature.properties.organization}')">${feature.properties.Email}</a>`;
+                popupContent += `<br><a href="mailto:${feature.properties.Email}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Email}</a>`;
+            }
+            if (feature.properties.Website != "NA") {
+                //popupContent += '<br>' + feature.properties.website;
+                //popupContent += `<br><a href="${feature.properties.Website}">${feature.properties.Website}</a>`;
+                //popupContent += `<br><a href="${feature.properties.Website}" onclick="handleExternalLinkClick(event, '${feature.properties.Website}', '${feature.properties.organization}')">${feature.properties.Website}</a>`;
+                popupContent += `<br><a href="${feature.properties.Website}" onclick="handleExternalLinkClick(event, this, '${feature.properties.organization}')">${feature.properties.Website}</a>`;
 
-    //#endregion
+            }
+            if (feature.properties.Description != "NA" && feature.properties.Description != 0 && feature.properties.Description != "") {
+                popupContent += '<br><i>' + feature.properties.Description + '</i>';
+            }
+            layer.bindPopup(popupContent);
+        }
 
-    //#region <!-- JS for search -->
+        function onEachFeatureShapes(feature, layer) {
 
-    const itemSearchBar = document.getElementById('itemSearchBar');
-    const itemSearchList = document.getElementById('itemSearchList');
-    const serviceSearchBar = document.getElementById('serviceSearchBar');
-    const serviceSearchList = document.getElementById('serviceSearchList');
+            layer.on({
+                mouseover: highlightFeature,
+                mouseout: resetHighlight
+                //click: zoomToFeature
+            });
 
-    itemSearchBar.addEventListener('input', (event) => {
-        const searchTerm = event.target.value.toLowerCase();
+            const propertyNames = Object.keys(feature.properties);
+            const thirdKeyName = propertyNames[2];
+            const fourthKeyName = propertyNames[3];
 
-        // Grab the newly created DOM elements
-        const items = document.querySelectorAll('.item');
+            let pointID = 0;
+            let pointName = "NA";
 
-        items.forEach(item => {
-            const textValue = item.textContent.toLowerCase();
-            var search = item.dataset.search.toLowerCase();
-            search = search.replace(/[\r\n]+/g, ' ');
+            let oyTotal = 0;
+            let oyRate = 0;
+            let oyDensity = 0;
 
-            //if (textValue.includes(searchTerm)) {
-            if (search.includes(searchTerm)) {
-                item.style.display = "";
-            } else {
-                item.style.display = "none";
+            var landAreaSM = feature.properties.ALAND20; // square meters
+            var landArea = (landAreaSM / 2589988.1103).toFixed(2);
+
+            if (thirdKeyName == 'GEOID20') { // reading zips.js
+                pointID = feature.properties.GEOID20;
+                pointName = feature.properties.ZCTA5CE20;
+                feature.properties.pointName = pointName;
+
+                var match = zipData.find(item => item.GEOID20 === pointID);
+
+                oyRate = match ? match.oy_pct : 0;
+                youthPop = match ? match.pop_16_24 : 0;
+                oyTotal = (youthPop * oyRate).toFixed(0);
+                oyDensity = (oyTotal / landArea).toFixed(1);
+                oyRate = (oyRate * 100).toFixed(1);
+                feature.properties.density = oyDensity;
+
+            } else { //reading pumas.js
+                pointID = feature.properties[fourthKeyName];
+                //pointName = feature.properties.CLQW;
+                //var match = pumaData.find(item => item.NAMELSAD20 === pointID);
+                //var match = pumaShapes.find(item => item.NAMELSAD20 === pointID);
+                //pointName = match ? match.NAMELSAD20 : "NA";
+                pointName = feature.properties.NAMELSAD20;
+                oyTotal = feature.properties._dy_total;
+                oyRate = feature.properties._dy_rate;
+                oyDensity = (oyTotal / landArea).toFixed(1);
+                feature.properties.density = oyDensity;
+                feature.properties.pointName = pointName;
+            }
+
+            //let popupContent = `<p>Geometry type: ${feature.geometry.type}!</p>`;
+            let popupContent = '';
+            if (pointName != "NA") {
+                popupContent += `<strong> ${pointName} </strong>`;
+            }
+            popupContent += `<br> Opportunity Youth: ${oyTotal}`;
+            popupContent += `<br> Disconnection Rate: ${oyRate} %`;
+            popupContent += `<br> Land Area: ${landArea} mi²`;
+            popupContent += `<br> Density: ${oyDensity} OY per mi²`;
+            layer.bindPopup(popupContent);
+
+            // Update style so color will reflect density we just calculated
+            const updatedStyle = style(feature);
+            layer.setStyle(updatedStyle);
+        }
+
+        //#endregion
+
+        //#region <!-- Function to get icon dynamically -->
+        // returns a marker
+        function getIcon(iconName, lat, lon) {
+            if (iconName == "circleMarker") {
+                return L.circleMarker(L.latLng(lat, lon), {
+                    radius: 10,
+                    fillColor: '#ff7800',
+                    color: '#001',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+            }
+            // else if (iconName == "art") {
+            //     return L.marker(L.latLng(lat, lon), { icon: artIcon });
+            // }
+            // else if (iconName == "church") {
+            //     return L.marker(L.latLng(lat, lon), { icon: churchIcon });
+            // }
+            // else if (iconName == "college") {
+            //     return L.marker(L.latLng(lat, lon), { icon: collegeIcon });
+            // }
+            // else if (iconName == "commerce") {
+            //     return L.marker(L.latLng(lat, lon), { icon: commerceIcon });
+            // }
+            // else if (iconName == "hammer") {
+            //     return L.marker(L.latLng(lat, lon), { icon: hammerIcon });
+            // }
+            // else if (iconName == "house") {
+            //     return L.marker(L.latLng(lat, lon), { icon: houseIcon });
+            // }
+            // else if (iconName == "policy") {
+            //     return L.marker(L.latLng(lat, lon), { icon: policyIcon });
+            // }
+            // else if (iconName == "service") {
+            //     return L.marker(L.latLng(lat, lon), { icon: serviceIcon });
+            // }
+            // else if (iconName == "training") {
+            //     return L.marker(L.latLng(lat, lon), { icon: trainingIcon });
+            // }
+            // else {
+            //     var curMrkr = L.marker(L.latLng(lat, lon), { icon: unknownIcon });
+            //     //return curMrkr;
+            //     //var glowMrkr = setGlowOnMarkerTheLeafletWay(curMrkr);
+            //     //return glowMrkr;
+            //     //return setGlowOnMarkerTheLeafletWay(L.marker(L.latLng(lat, lon), { icon: unknownIcon }));
+            //     //var curMrkr = L.marker(L.latLng(lat, lon), { icon: glowingIconTest });
+            //     return curMrkr;
+            // }
+            else {
+                // Look up the matching pre-created Leaflet icon
+                var matchingIcon = mapIcons[iconName];
+                if (matchingIcon) {
+                    return L.marker(L.latLng(lat, lon), { icon: matchingIcon });
+                } else {
+                    console.warn(`No icon found for: ${iconName}. Using default.`);
+                    var curMrkr = L.marker(L.latLng(lat, lon), { icon: unknownIcon });
+                    //var curMrkr = L.marker(L.latLng(lat, lon), { icon: circleMarker });
+                    return curMrkr;
+                }
+            }
+        }
+        //#endregion
+
+        //#region <!-- JS for tabs -->
+
+        function openTab(evt, tabName) {
+            // Declare all variables
+            var i, tabcontent, tablinks;
+
+            // Get all elements with class="tabcontent" and hide them
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            // Get all elements with class="tablinks" and remove the class "active"
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+
+            // // Show the current tab, and add an "active" class to the button that opened the tab
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+
+            if (tabName === "Map") {
+                map.invalidateSize();
+                map.setView([29.760, -95.370], 10); // Houston
+                //map.setView([39.74739, -105], 13); // Denver
+            }
+            if (tabName === "itemSearch") {
+                //map.invalidateSize();
+                //map.setView([30.267, -97.743], 10); // Austin
+            }
+            if (tabName === "serviceSearch") {
+                //map.invalidateSize();
+                //map.setView([35.6764, 139.6500], 10); // Tokyo
+            }
+        }
+        //#endregion
+
+        //#region <!-- JS for watermark -->
+        L.Control.Watermark = L.Control.extend({
+            onAdd: function (map) {
+                var img = L.DomUtil.create('img');
+
+                img.src = './img/OYCACAM.webp';
+                img.style.width = '200px';
+
+                return img;
+            },
+
+            onRemove: function (map) {
+                // Nothing to do here
             }
         });
-    });
-    serviceSearchBar.addEventListener('input', (event) => {
-        const searchTerm = event.target.value.toLowerCase();
+        L.control.watermark = function (opts) {
+            return new L.Control.Watermark(opts);
+        }
+        L.control.watermark({ position: 'bottomleft' }).addTo(map);
+        //#endregion
 
-        // Grab the newly created DOM elements
-        const items = document.querySelectorAll('.item');
+        //#region <!-- JS for glow, select, show popup -->
 
-        items.forEach(item => {
-            const textValue = item.textContent.toLowerCase();
-            var search = item.dataset.search.toLowerCase();
-            search = search.replace(/[\r\n]+/g, ' ');
+        // works, but must wait for full map to be loaded
+        function findMarkerByName(searchName) {
+            let foundLayer = null;
 
-            //if (textValue.includes(searchTerm)) {
-            if (search.includes(searchTerm)) {
-                item.style.display = "";
-            } else {
-                item.style.display = "none";
-            }
+            partnerDataLayer.eachLayer(function (layer) {
+                if (layer.feature && layer.feature.properties && layer.feature.properties.name === searchName) {
+                    foundLayer = layer;
+                    return foundLayer;
+                }
+            });
+
+            return foundLayer;
+        }
+
+        // NOT TESTED
+        function openMarkerPopup(markerName) {
+            let curMrkr = null;
+            // Get marker somehow?
+            curMrkr.openPopup();
+        }
+
+        // NOT TESTED
+        function makeMarkerPulse(markerName) {
+            let curMrkr = null;
+            // Get marker somehow?
+            curMrkr._icon.classList.add('pulsating-icon'); // works via css
+        }
+
+        // 2. The Zoom Listener
+        //map.on('zoomend', function () {
+        //});
+
+        //#endregion
+
+        //#region <!-- JS for search -->
+
+        const itemSearchBar = document.getElementById('itemSearchBar');
+        const itemSearchList = document.getElementById('itemSearchList');
+        const serviceSearchBar = document.getElementById('serviceSearchBar');
+        const serviceSearchList = document.getElementById('serviceSearchList');
+
+        itemSearchBar.addEventListener('input', (event) => {
+            const searchTerm = event.target.value.toLowerCase();
+
+            // Grab the newly created DOM elements
+            const items = document.querySelectorAll('.item');
+
+            items.forEach(item => {
+                const textValue = item.textContent.toLowerCase();
+                var search = item.dataset.search.toLowerCase();
+                search = search.replace(/[\r\n]+/g, ' ');
+
+                //if (textValue.includes(searchTerm)) {
+                if (search.includes(searchTerm)) {
+                    item.style.display = "";
+                } else {
+                    item.style.display = "none";
+                }
+            });
         });
-    });
+        serviceSearchBar.addEventListener('input', (event) => {
+            const searchTerm = event.target.value.toLowerCase();
 
-    //#endregion
+            // Grab the newly created DOM elements
+            const items = document.querySelectorAll('.item');
 
-    //#region <!-- Collect Sharepoint and CSV Data -->
+            items.forEach(item => {
+                const textValue = item.textContent.toLowerCase();
+                var search = item.dataset.search.toLowerCase();
+                search = search.replace(/[\r\n]+/g, ' ');
 
-    // Power Automate Request
-    var FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ff82a7d67c2d4cd6910acfd25292bf33/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=dWBZIsS0c4S6almW4PQljf3U-89_AEREfeiy7IHTArc";
-    var SERVICE_FLOW_URL =
-        "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d48e7d02cb33470490ae3e4aab69b11b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=JskPHZpzvA9NZMdDpni5WMVXMv4eaBrEXlOlGDmZARg";
-    var OP_FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fcbb117e644449e8a8fa651ec5517592/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Sgjr_A_eSKe02E8UXa27T0JaMyzx1bCFS2f_F2ROftk";
-    var POP_FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/eb77c19c9c684594b7d9bcad5de664c2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=OhqNdqS6dV-CQ0KM3f4P1kx5bz9YJYk6PPwakHIIKks";
+                //if (textValue.includes(searchTerm)) {
+                if (search.includes(searchTerm)) {
+                    item.style.display = "";
+                } else {
+                    item.style.display = "none";
+                }
+            });
+        });
 
-    //let serviceList = [];
-    var serviceDataJSN;
-    var opDataJSN;
-    var popDataJSN;
-    var partnerDataJSN;
+        //#endregion
 
-    async function collectData(forceUpdate = false) {
-        // Load CSV data for zip codes
-        //(async () => {
-        zipData = await loadCSVData('zipData.csv', forceUpdate);
-        console.log("zipData loaded.")
-        //})();
-        try {
-            console.log("Fetching Power Automate service data...");
-            var serviceDataJSNstr = sessionStorage.getItem('serviceDataJSNstr'); // try to get cached data
-            if (!serviceDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
-                // PAUSE here until the HTTP request finishes downloading
-                const response = await fetch(SERVICE_FLOW_URL);
-                // PAUSE here until the data stream completely parses into JSON format
-                serviceDataJSN = await response.json();
-                sessionStorage.setItem('serviceDataJSNstr', JSON.stringify(serviceDataJSN));
-            } else {
-                serviceDataJSN = JSON.parse(serviceDataJSNstr);
+        //#region <!-- Collect Sharepoint and CSV Data -->
+
+        // Power Automate Request
+        var FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/ff82a7d67c2d4cd6910acfd25292bf33/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=dWBZIsS0c4S6almW4PQljf3U-89_AEREfeiy7IHTArc";
+        var SERVICE_FLOW_URL =
+            "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/d48e7d02cb33470490ae3e4aab69b11b/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=JskPHZpzvA9NZMdDpni5WMVXMv4eaBrEXlOlGDmZARg";
+        var OP_FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/fcbb117e644449e8a8fa651ec5517592/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=Sgjr_A_eSKe02E8UXa27T0JaMyzx1bCFS2f_F2ROftk";
+        var POP_FLOW_URL = "https://default2a7c91df0c894007989227997db3b4.52.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/eb77c19c9c684594b7d9bcad5de664c2/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=OhqNdqS6dV-CQ0KM3f4P1kx5bz9YJYk6PPwakHIIKks";
+
+        //let serviceList = [];
+        var serviceDataJSN;
+        var opDataJSN;
+        var popDataJSN;
+        var partnerDataJSN;
+
+        async function collectData(forceUpdate = false) {
+            // Load CSV data for zip codes
+            //(async () => {
+            zipData = await loadCSVData('zipData.csv', forceUpdate);
+            console.log("zipData loaded.")
+            //})();
+            try {
+                console.log("Fetching Power Automate service data...");
+                var serviceDataJSNstr = sessionStorage.getItem('serviceDataJSNstr'); // try to get cached data
+                if (!serviceDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
+                    // PAUSE here until the HTTP request finishes downloading
+                    const response = await fetch(SERVICE_FLOW_URL);
+                    // PAUSE here until the data stream completely parses into JSON format
+                    serviceDataJSN = await response.json();
+                    sessionStorage.setItem('serviceDataJSNstr', JSON.stringify(serviceDataJSN));
+                } else {
+                    serviceDataJSN = JSON.parse(serviceDataJSNstr);
+                }
+                console.log("Service Data successfully loaded!");
+            } catch (error) {
+                console.error("Critical error fetching or processing Power Automate flow service data:", error);
             }
-            console.log("Service Data successfully loaded!");
-        } catch (error) {
-            console.error("Critical error fetching or processing Power Automate flow service data:", error);
-        }
-        try {
-            var opDataJSNstr = sessionStorage.getItem('opDataJSNstr'); // try to get cached data
-            if (!opDataJSNstr || forceUpdate) {
-                const response = await fetch(OP_FLOW_URL);
-                opDataJSN = await response.json();
-                sessionStorage.setItem('opDataJSNstr', JSON.stringify(opDataJSN));
-            } else {
-                opDataJSN = JSON.parse(opDataJSNstr);
+            try {
+                var opDataJSNstr = sessionStorage.getItem('opDataJSNstr'); // try to get cached data
+                if (!opDataJSNstr || forceUpdate) {
+                    const response = await fetch(OP_FLOW_URL);
+                    opDataJSN = await response.json();
+                    sessionStorage.setItem('opDataJSNstr', JSON.stringify(opDataJSN));
+                } else {
+                    opDataJSN = JSON.parse(opDataJSNstr);
+                }
+            } catch (error) {
+                console.error("Critical error fetching or processing Power Automate flow operation data:", error);
             }
-        } catch (error) {
-            console.error("Critical error fetching or processing Power Automate flow operation data:", error);
-        }
-        try {
-            var popDataJSNstr = sessionStorage.getItem('popDataJSNstr'); // try to get cached data
-            if (!popDataJSNstr || forceUpdate) {
-                const response = await fetch(POP_FLOW_URL);
-                popDataJSN = await response.json();
-                sessionStorage.setItem('popDataJSNstr', JSON.stringify(popDataJSN));
-            } else {
-                popDataJSN = JSON.parse(popDataJSNstr);
+            try {
+                var popDataJSNstr = sessionStorage.getItem('popDataJSNstr'); // try to get cached data
+                if (!popDataJSNstr || forceUpdate) {
+                    const response = await fetch(POP_FLOW_URL);
+                    popDataJSN = await response.json();
+                    sessionStorage.setItem('popDataJSNstr', JSON.stringify(popDataJSN));
+                } else {
+                    popDataJSN = JSON.parse(popDataJSNstr);
+                }
+            } catch (error) {
+                console.error("Critical error fetching or processing Power Automate flow population data:", error);
             }
-        } catch (error) {
-            console.error("Critical error fetching or processing Power Automate flow population data:", error);
-        }
-        try {
-            console.log("Fetching Power Automate flow partner data...");
-            partnerDataJSN;
-            var partnerDataJSNstr = sessionStorage.getItem('partnerDataJSNstr'); // try to get cached data
-            if (!partnerDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
-                // PAUSE here until the HTTP request finishes downloading
-                const response = await fetch(FLOW_URL);
-                // PAUSE here until the data stream completely parses into JSON format
-                partnerDataJSN = await response.json();
-                sessionStorage.setItem('partnerDataJSNstr', JSON.stringify(partnerDataJSN));
-            } else {
-                partnerDataJSN = JSON.parse(partnerDataJSNstr);
+            try {
+                console.log("Fetching Power Automate flow partner data...");
+                partnerDataJSN;
+                var partnerDataJSNstr = sessionStorage.getItem('partnerDataJSNstr'); // try to get cached data
+                if (!partnerDataJSNstr || forceUpdate) { //# not found, retrieve from SharePoint
+                    // PAUSE here until the HTTP request finishes downloading
+                    const response = await fetch(FLOW_URL);
+                    // PAUSE here until the data stream completely parses into JSON format
+                    partnerDataJSN = await response.json();
+                    sessionStorage.setItem('partnerDataJSNstr', JSON.stringify(partnerDataJSN));
+                } else {
+                    partnerDataJSN = JSON.parse(partnerDataJSNstr);
+                }
+                // Debugging Step: See exactly what Power Automate is handing you!
+                console.log("Data successfully loaded! Parsing features...", partnerDataJSN);
+            } catch (error) {
+                console.error("Critical error fetching or processing Power Automate flow data:", error);
             }
-            // Debugging Step: See exactly what Power Automate is handing you!
-            console.log("Data successfully loaded! Parsing features...", partnerDataJSN);
-        } catch (error) {
-            console.error("Critical error fetching or processing Power Automate flow data:", error);
+            console.log("Partner data collected...");
+
+            // Add abbreviation data to global database: abbreviationDB
+            addToAbbreviationDatabase(serviceDataJSN, "Service", "Abbreviation");
+            addToAbbreviationDatabase(opDataJSN, "OperationalFocus", "Abbreviation");
+            addToAbbreviationDatabase(popDataJSN, "PopulationFocus", "Abbreviation");
+
+            try {
+                generateLeafletIcons(Object.keys(abbreviationDB));
+            } catch (err) {
+                console.error("Error initializing icons:", err);
+            }
+
+            initMapData(forceUpdate);
+
+            initServiceSearch();
         }
-        console.log("Partner data collected...");
 
-        // Add abbreviation data to global database: abbreviationDB
-        addToAbbreviationDatabase(serviceDataJSN, "Service", "Abbreviation");
-        addToAbbreviationDatabase(opDataJSN, "OperationalFocus", "Abbreviation");
-        addToAbbreviationDatabase(popDataJSN, "PopulationFocus", "Abbreviation");
+        //#endregion <!-- Collect Sharepoint and CSV Data, create icons -->
 
-        try {
-            generateLeafletIcons(Object.keys(abbreviationDB));
-        } catch (err) {
-            console.error("Error initializing icons:", err);
-        }
+        //#region <!--Create search lists and abbreviation database -->
 
-        initMapData(forceUpdate);
-
-        initServiceSearch();
-    }
-
-    //#endregion <!-- Collect Sharepoint and CSV Data, create icons -->
-
-    //#region <!--Create search lists and abbreviation database -->
-
-    async function initServiceSearch() {
-        // We should have all the service data now, so we can create our service search
-        serviceDataJSN.forEach(element => {
-            //console.log(" Abbreviation: ", element.Abbreviation);
-            var serviceURL = encodeURIComponent(element.Abbreviation);
-            var searchData = element.Abbreviation + '<br>' + element.Service + '<br>' + element.ServiceCategory + '<br>' + element.Definition;
-            var displayData = element.Definition;
-            serviceSearchList.innerHTML += `
+        async function initServiceSearch() {
+            // We should have all the service data now, so we can create our service search
+            serviceDataJSN.forEach(element => {
+                //console.log(" Abbreviation: ", element.Abbreviation);
+                var serviceURL = encodeURIComponent(element.Abbreviation);
+                var searchData = element.Abbreviation + '<br>' + element.Service + '<br>' + element.ServiceCategory + '<br>' + element.Definition;
+                var displayData = element.Definition;
+                serviceSearchList.innerHTML += `
                 <li class="item" title="${element.Abbreviation}" data-search='${searchData}'> 
                 <div class="item-main">
                 <a href=?service=${serviceURL}> ${element.Service} </a>
                 <br> ${displayData}
                 </div>
                 </li>`;
-        });
-        console.log("Service search created.");
-    }
+            });
+            console.log("Service search created.");
+        }
 
-    async function initPartnerSearch() {
-        // Create partner search
-        partnerDataGJSN.features.forEach(feature => {
-            const item = feature.properties;
-            var pointNameURL = encodeURIComponent(item.pointName);
-            const opFocus = getAbbreviationFromDatabse(item.OperationalFocus);
-            const popFocus = getAbbreviationFromDatabse(item.PopulationFocus);
-            const primService = getAbbreviationFromDatabse(item.PrimaryService);
-            const secnService = getAbbreviationFromDatabse(item.SecondaryService);
-            const tertService = getAbbreviationFromDatabse(item.TertiaryService);
-            // Check if item.Description exists, isn't null, and isn't "0" or 0
-            var descriptionChunk = (item.Description && item.Description !== '0' && item.Description !== 0)
-                ? `\n${item.Description}\n`
-                : '';
-            var titleData = item.FullAddress + '\n' + item.OperationalFocus;
-            var detailData = item.pointName + '\n' + item.FullAddress + '\n' + 'Primary Service: <a href=?service=' + encodeURIComponent(primService) + '>' + item.PrimaryService + '</a>';
-            var searchDisplay = `<a href=?pointName=${pointNameURL}> ${item.pointName} </a>`
-            if (item.SecondaryService) { detailData += '\n' + 'Secondary Service: <a href=?service=' + encodeURIComponent(secnService) + '>' + item.SecondaryService + '</a>' }
-            if (item.TertiaryService) { detailData += '\n' + 'Other Service: <a href=?service=' + encodeURIComponent(tertService) + '>' + item.TertiaryService + '</a>' }
-            if (opFocus) {
-                //detailData += '\n' + 'Focus: <a href=?opfocus=' + encodeURIComponent(opFocus) + '>' + item.OperationalFocus + '</a>';
-                searchDisplay += `<br> &emsp;&emsp; <a href=?opfocus=${opFocus}> ${item.OperationalFocus} </a>`
-            }
-            if (popFocus) {
-                //detailData += '\n' + 'Focus Population: <a href=?population=' + encodeURIComponent(popFocus) + '>' + item.PopulationFocus + '</a>';
-                searchDisplay += `<br> &emsp;&emsp; <a href=?population=${popFocus}> ${item.PopulationFocus} </a>`;
-            }
-            detailData += '\n' + descriptionChunk + '\n';
-            //if (descriptionChunk) { detailData += '\n' + descriptionChunk + '\n'; }
+        async function initPartnerSearch() {
+            // Create partner search
+            partnerDataGJSN.features.forEach(feature => {
+                const item = feature.properties;
+                var pointNameURL = encodeURIComponent(item.pointName);
+                const opFocus = getAbbreviationFromDatabse(item.OperationalFocus);
+                const popFocus = getAbbreviationFromDatabse(item.PopulationFocus);
+                const primService = getAbbreviationFromDatabse(item.PrimaryService);
+                const secnService = getAbbreviationFromDatabse(item.SecondaryService);
+                const tertService = getAbbreviationFromDatabse(item.TertiaryService);
+                // Check if item.Description exists, isn't null, and isn't "0" or 0
+                var descriptionChunk = (item.Description && item.Description !== '0' && item.Description !== 0)
+                    ? `\n${item.Description}\n`
+                    : '';
+                var titleData = item.FullAddress + '\n' + item.OperationalFocus;
+                var detailData = item.pointName + '\n' + item.FullAddress + '\n' + 'Primary Service: <a href=?service=' + encodeURIComponent(primService) + '>' + item.PrimaryService + '</a>';
+                var searchDisplay = `<a href=?pointName=${pointNameURL}> ${item.pointName} </a>`
+                if (item.SecondaryService) { detailData += '\n' + 'Secondary Service: <a href=?service=' + encodeURIComponent(secnService) + '>' + item.SecondaryService + '</a>' }
+                if (item.TertiaryService) { detailData += '\n' + 'Other Service: <a href=?service=' + encodeURIComponent(tertService) + '>' + item.TertiaryService + '</a>' }
+                if (opFocus) {
+                    //detailData += '\n' + 'Focus: <a href=?opfocus=' + encodeURIComponent(opFocus) + '>' + item.OperationalFocus + '</a>';
+                    searchDisplay += `<br> &emsp;&emsp; <a href=?opfocus=${opFocus}> ${item.OperationalFocus} </a>`
+                }
+                if (popFocus) {
+                    //detailData += '\n' + 'Focus Population: <a href=?population=' + encodeURIComponent(popFocus) + '>' + item.PopulationFocus + '</a>';
+                    searchDisplay += `<br> &emsp;&emsp; <a href=?population=${popFocus}> ${item.PopulationFocus} </a>`;
+                }
+                detailData += '\n' + descriptionChunk + '\n';
+                //if (descriptionChunk) { detailData += '\n' + descriptionChunk + '\n'; }
 
-            var searchData = item.partnerName + item.zip + item.PrimaryService + item.SecondaryService + item.TertiaryService + item.PopulationFocus + descriptionChunk;
-            itemSearchList.innerHTML += `
+                var searchData = item.partnerName + item.zip + item.PrimaryService + item.SecondaryService + item.TertiaryService + item.PopulationFocus + descriptionChunk;
+                itemSearchList.innerHTML += `
                     <li class="item" title="${titleData}" data-search='${searchData}'> 
                         <div class="item-main">
                             <button type="button" class="details-toggle" onclick="toggleDetails(this)">Show details</button>
@@ -1115,614 +1107,614 @@
                             ${detailData}
                         </div>
                     </li>`;
-        });
-        console.log("Partner search created.");
-    }
-
-    // The centralized abbreviation registry
-    const abbreviationDB = {};
-
-    function addToAbbreviationDatabase(data, nameColName, abvColName) {
-        // Safety check: ensure data is a valid array
-        if (!Array.isArray(data)) {
-            console.error("Provided data is not a valid array.");
-            return;
-        }
-
-        let itemsAdded = 0;
-
-        data.forEach(row => {
-            // Extract the raw values dynamically using the provided column name strings
-            const rawAbv = row[abvColName];
-            const rawName = row[nameColName];
-
-            // Clean and normalize the abbreviation key (trimmed, uppercase for consistency)
-            if (rawAbv && rawName) {
-                //const cleanAbv = rawAbv.toString().trim().toUpperCase();
-                const cleanAbv = rawAbv.toString().trim().toLowerCase();
-                const cleanName = rawName.toString().trim();
-
-                // Add or update the registry
-                abbreviationDB[cleanAbv] = cleanName;
-                itemsAdded++;
-            }
-        });
-
-        console.log(`Database Updated: Registered ${itemsAdded} entries using columns [Abv: "${abvColName}", Name: "${nameColName}"].`);
-    }
-
-    function getAbbreviationFromDatabse(longName) {
-        if (!longName) return null;
-        const searchName = longName.toLowerCase().trim();
-        //const searchName = longName;
-        // Find the key (abbreviation) where the value matches the long name
-        const match = Object.keys(abbreviationDB).find(key => {
-            return abbreviationDB[key].toLowerCase().trim() === searchName;
-        });
-        return match || null;
-    }
-
-    //#endregion <!--Create search lists and abbreviation database -->
-
-    //#region <!-- Create Icons -->
-
-    // A global object to hold your generated Leaflet icons
-    const mapIcons = {};
-    function generateLeafletIcons(abbreviationsList) {
-        // 1. Get a unique list of abbreviations using a Set so we don't recreate the same icon twice
-        //const uniqueAbbreviations = [...new Set(serviceDataArray.map(item => item.Abbreviation))];
-
-        // 2. Loop through each unique abbreviation
-        abbreviationsList.forEach(abbreviation => {
-            // Guard clause: Skip if abbreviation is empty or undefined
-            if (!abbreviation) return;
-
-            // Clean up the string for the filename (lowercase/trimmed to prevent path issues)
-            const fileName = abbreviation.toLowerCase().trim();
-            const iconPath = `./img/${fileName}.svg`;
-
-            try {
-                // 3. Create the new Leaflet icon using your custom placeIcon class
-                mapIcons[abbreviation] = new placeIcon({
-                    iconUrl: iconPath
-                });
-
-                //console.log(`Successfully registered icon for: ${abbreviation} -> ${iconPath}`);
-            } catch (error) {
-                console.error(`Failed to create Leaflet icon for ${abbreviation}:`, error);
-            }
-        });
-    }
-
-    //#endregion <!-- Create Icons -->
-
-    //#region <!-- Construct GeoJSon AND Create Markers -->
-
-    var partnerDataGJSN = {
-        type: "FeatureCollection",
-        features: []
-    };
-    let partnerDataLayer;
-
-    async function buildpartnerDataGJSN(forceUpdate = false) {
-        try {
-            console.log("Fetching partnerDataGJSN...");
-            var partnerDataGJSNstr = sessionStorage.getItem('partnerDataGJSNstr'); // try to get cached data
-            if (partnerDataGJSNstr && !forceUpdate) { //# not found, retrieve from SharePoint
-                console.log("partnerDataGJSNstr found in session. parsing data...");
-                partnerDataGJSN = JSON.parse(partnerDataGJSNstr);
-                console.log("Exiting buildpartnerDataGJSN.");
-                return;
-            } else {
-                console.log("partnerDataGJSN NOT found in session. Building...");
-            }
-        } catch (error) {
-            console.error("Critical error fetching partnerDataGJSN:", error);
-        }
-        partnerDataJSN.items.forEach(function (item, index) {
-            //Object.keys(partnerDataJSN.items).forEach(function (key, index) {
-            const lat = item.Lat;
-            const lon = item.Lon;
-            const incl = item.Include
-
-            if (isNaN(lat) || isNaN(lon) || lat == 0 || lon == 0 || incl == "No") return;
-
-            const partnerName = item.Title.replace(/[\r\n]+/g, ' ');
-            const pointName = item.OrgLocation.replace(/[\r\n]+/g, ' ');
-            const servicesFull = [item.PrimaryService, item.SecondaryService, item.TertiaryService];
-            // Probably most efficient to get the abbreviations and save them here
-            const services = servicesFull
-                .map(longName => getAbbreviationFromDatabse(longName))
-                .filter(abv => abv !== null);
-            //const PrimaryService = getAbbreviationFromDatabse(item.PrimaryService);
-            //const SecondaryService = getAbbreviationFromDatabse(item.SecondaryService);
-            //const TertiaryService = getAbbreviationFromDatabse(item.TertiaryService);
-            //const PrimaryService = item.PrimaryService;
-            //const SecondaryService = item.SecondaryService;
-            //const TertiaryService = item.TertiaryService;
-            const opFocus = getAbbreviationFromDatabse(item.OperationalFocus);
-            const popFocus = getAbbreviationFromDatabse(item.PopulationFocus);
-
-            partnerDataGJSN.features.push({
-                geometry: {
-                    type: "Point",
-                    coordinates: [lon, lat]
-                },
-                type: "Feature",
-                properties: {
-                    pointName: `${pointName}`
-                    , organization: `${partnerName}`
-                    , FullAddress: `${item.FullAddress}`
-                    , zip: `${item.ZipCode}`
-                    , Phone: `${item.Phone}`
-                    , SMS: `${item.SMS}`
-                    , Email: `${item.Email}`
-                    , Website: `${item.Website}`
-                    , Description: `${item.Description}`
-                    , opfocus: `${opFocus}`
-                    , OperationalFocus: `${item.OperationalFocus}`
-                    , population: `${popFocus}`
-                    , PopulationFocus: `${item.PopulationFocus}`
-                    //, icon: `${item.Icon}`
-                    , icon: `${opFocus}`
-                    , PrimaryService: `${item.PrimaryService}`
-                    , SecondaryService: `${item.SecondaryService}`
-                    , TertiaryService: `${item.TertiaryService}`
-                    , services: services
-                    //, service: `${item.PrimaryService}`
-                },
-                id: item.ID
             });
-        });
-        console.log("Storing partnerDataGJSN...")
-        sessionStorage.setItem('partnerDataGJSNstr', JSON.stringify(partnerDataGJSN));
-    }
+            console.log("Partner search created.");
+        }
 
-    async function initMapData(forceUpdate = false) {
+        // The centralized abbreviation registry
+        const abbreviationDB = {};
 
-        await buildpartnerDataGJSN(forceUpdate);
-        initPartnerSearch();
-        // Wrap the entire initialization into a Promise variable
-        // According to Gemini, this cannot be cached. We need to load it every time. 
-        const buildGeoJsonLayer = new Promise((resolve, reject) => {
+        function addToAbbreviationDatabase(data, nameColName, abvColName) {
+            // Safety check: ensure data is a valid array
+            if (!Array.isArray(data)) {
+                console.error("Provided data is not a valid array.");
+                return;
+            }
+
+            let itemsAdded = 0;
+
+            data.forEach(row => {
+                // Extract the raw values dynamically using the provided column name strings
+                const rawAbv = row[abvColName];
+                const rawName = row[nameColName];
+
+                // Clean and normalize the abbreviation key (trimmed, uppercase for consistency)
+                if (rawAbv && rawName) {
+                    //const cleanAbv = rawAbv.toString().trim().toUpperCase();
+                    const cleanAbv = rawAbv.toString().trim().toLowerCase();
+                    const cleanName = rawName.toString().trim();
+
+                    // Add or update the registry
+                    abbreviationDB[cleanAbv] = cleanName;
+                    itemsAdded++;
+                }
+            });
+
+            console.log(`Database Updated: Registered ${itemsAdded} entries using columns [Abv: "${abvColName}", Name: "${nameColName}"].`);
+        }
+
+        function getAbbreviationFromDatabse(longName) {
+            if (!longName) return null;
+            const searchName = longName.toLowerCase().trim();
+            //const searchName = longName;
+            // Find the key (abbreviation) where the value matches the long name
+            const match = Object.keys(abbreviationDB).find(key => {
+                return abbreviationDB[key].toLowerCase().trim() === searchName;
+            });
+            return match || null;
+        }
+
+        //#endregion <!--Create search lists and abbreviation database -->
+
+        //#region <!-- Create Icons -->
+
+        // A global object to hold your generated Leaflet icons
+        const mapIcons = {};
+        function generateLeafletIcons(abbreviationsList) {
+            // 1. Get a unique list of abbreviations using a Set so we don't recreate the same icon twice
+            //const uniqueAbbreviations = [...new Set(serviceDataArray.map(item => item.Abbreviation))];
+
+            // 2. Loop through each unique abbreviation
+            abbreviationsList.forEach(abbreviation => {
+                // Guard clause: Skip if abbreviation is empty or undefined
+                if (!abbreviation) return;
+
+                // Clean up the string for the filename (lowercase/trimmed to prevent path issues)
+                const fileName = abbreviation.toLowerCase().trim();
+                const iconPath = `./img/${fileName}.svg`;
+
+                try {
+                    // 3. Create the new Leaflet icon using your custom placeIcon class
+                    mapIcons[abbreviation] = new placeIcon({
+                        iconUrl: iconPath
+                    });
+
+                    //console.log(`Successfully registered icon for: ${abbreviation} -> ${iconPath}`);
+                } catch (error) {
+                    console.error(`Failed to create Leaflet icon for ${abbreviation}:`, error);
+                }
+            });
+        }
+
+        //#endregion <!-- Create Icons -->
+
+        //#region <!-- Construct GeoJSon AND Create Markers -->
+
+        var partnerDataGJSN = {
+            type: "FeatureCollection",
+            features: []
+        };
+        let partnerDataLayer;
+
+        async function buildpartnerDataGJSN(forceUpdate = false) {
             try {
-                // 1. Execute your Leaflet initialization logic
-                partnerDataLayer = L.geoJSON(partnerDataGJSN, {
-                    style(feature) {
-                        return feature.properties && feature.properties.style;
+                console.log("Fetching partnerDataGJSN...");
+                var partnerDataGJSNstr = sessionStorage.getItem('partnerDataGJSNstr'); // try to get cached data
+                if (partnerDataGJSNstr && !forceUpdate) { //# not found, retrieve from SharePoint
+                    console.log("partnerDataGJSNstr found in session. parsing data...");
+                    partnerDataGJSN = JSON.parse(partnerDataGJSNstr);
+                    console.log("Exiting buildpartnerDataGJSN.");
+                    return;
+                } else {
+                    console.log("partnerDataGJSN NOT found in session. Building...");
+                }
+            } catch (error) {
+                console.error("Critical error fetching partnerDataGJSN:", error);
+            }
+            partnerDataJSN.items.forEach(function (item, index) {
+                //Object.keys(partnerDataJSN.items).forEach(function (key, index) {
+                const lat = item.Lat;
+                const lon = item.Lon;
+                const incl = item.Include
+
+                if (isNaN(lat) || isNaN(lon) || lat == 0 || lon == 0 || incl == "No") return;
+
+                const partnerName = item.Title.replace(/[\r\n]+/g, ' ');
+                const pointName = item.OrgLocation.replace(/[\r\n]+/g, ' ');
+                const servicesFull = [item.PrimaryService, item.SecondaryService, item.TertiaryService];
+                // Probably most efficient to get the abbreviations and save them here
+                const services = servicesFull
+                    .map(longName => getAbbreviationFromDatabse(longName))
+                    .filter(abv => abv !== null);
+                //const PrimaryService = getAbbreviationFromDatabse(item.PrimaryService);
+                //const SecondaryService = getAbbreviationFromDatabse(item.SecondaryService);
+                //const TertiaryService = getAbbreviationFromDatabse(item.TertiaryService);
+                //const PrimaryService = item.PrimaryService;
+                //const SecondaryService = item.SecondaryService;
+                //const TertiaryService = item.TertiaryService;
+                const opFocus = getAbbreviationFromDatabse(item.OperationalFocus);
+                const popFocus = getAbbreviationFromDatabse(item.PopulationFocus);
+
+                partnerDataGJSN.features.push({
+                    geometry: {
+                        type: "Point",
+                        coordinates: [lon, lat]
                     },
-                    onEachFeature,
-                    pointToLayer(feature, latlng) {
-                        const lon = feature.geometry.coordinates[0];
-                        const lat = feature.geometry.coordinates[1];
-                        //var icon = feature.properties.icon;
-                        //icon = getAbbreviationFromDatabse(feature.properties.opfocus);
-                        icon = feature.properties.icon;
+                    type: "Feature",
+                    properties: {
+                        pointName: `${pointName}`
+                        , organization: `${partnerName}`
+                        , FullAddress: `${item.FullAddress}`
+                        , zip: `${item.ZipCode}`
+                        , Phone: `${item.Phone}`
+                        , SMS: `${item.SMS}`
+                        , Email: `${item.Email}`
+                        , Website: `${item.Website}`
+                        , Description: `${item.Description}`
+                        , opfocus: `${opFocus}`
+                        , OperationalFocus: `${item.OperationalFocus}`
+                        , population: `${popFocus}`
+                        , PopulationFocus: `${item.PopulationFocus}`
+                        //, icon: `${item.Icon}`
+                        , icon: `${opFocus}`
+                        , PrimaryService: `${item.PrimaryService}`
+                        , SecondaryService: `${item.SecondaryService}`
+                        , TertiaryService: `${item.TertiaryService}`
+                        , services: services
+                        //, service: `${item.PrimaryService}`
+                    },
+                    id: item.ID
+                });
+            });
+            console.log("Storing partnerDataGJSN...")
+            sessionStorage.setItem('partnerDataGJSNstr', JSON.stringify(partnerDataGJSN));
+        }
 
-                        if (icon == null || icon == 'null') {
-                            icon = "unknown";
-                            //icon = "circleMarker";
+        async function initMapData(forceUpdate = false) {
+
+            await buildpartnerDataGJSN(forceUpdate);
+            initPartnerSearch();
+            // Wrap the entire initialization into a Promise variable
+            // According to Gemini, this cannot be cached. We need to load it every time. 
+            const buildGeoJsonLayer = new Promise((resolve, reject) => {
+                try {
+                    // 1. Execute your Leaflet initialization logic
+                    partnerDataLayer = L.geoJSON(partnerDataGJSN, {
+                        style(feature) {
+                            return feature.properties && feature.properties.style;
+                        },
+                        onEachFeature,
+                        pointToLayer(feature, latlng) {
+                            const lon = feature.geometry.coordinates[0];
+                            const lat = feature.geometry.coordinates[1];
+                            //var icon = feature.properties.icon;
+                            //icon = getAbbreviationFromDatabse(feature.properties.opfocus);
+                            icon = feature.properties.icon;
+
+                            if (icon == null || icon == 'null') {
+                                icon = "unknown";
+                                //icon = "circleMarker";
+                            }
+
+                            var currentIcon = getIcon(icon, lat, lon);
+                            currentIcon.addTo(locations);
+                            return currentIcon;
                         }
+                    });
 
-                        var currentIcon = getIcon(icon, lat, lon);
-                        currentIcon.addTo(locations);
-                        return currentIcon;
+                    // 2. Trigger resolve() when completely finished building.
+                    // This passes the fully populated layer group object outward.
+                    resolve(partnerDataLayer);
+
+                } catch (error) {
+                    // If anything inside the loop crashes, reject the promise with the error description
+                    reject(error);
+                }
+            });
+
+            if (partnerDataLayer.getBounds().isValid()) {
+                map.fitBounds(partnerDataLayer.getBounds());
+            } else {
+                console.log("NO MATCHES FOUND!")
+            }
+
+            //console.log("Constructed GeoJSON Object:", partnerDataGJSN);
+            //console.log("Constructed partnerDataGJSN:");
+
+        }
+
+        //#endregion
+
+        //#region <!-- Functions to dynamically change layers
+
+        async function filterContentByMatch(urlParams) {
+
+            const keysa = [...urlParams.keys()];
+            const valsa = [...urlParams.values()];
+            const ukeys = [...new Set(keysa)];
+
+            if (keysa.length === 0) { return; }
+
+            content.clearLayers();
+
+            var zipCount = 0;
+            var serviceCount = 0;
+
+            //lets convert abbreviated services to full services
+            if (keysa.includes('service')) {
+                // get the indices that match "service"
+                let temp = 0
+                var ServicesStr = ""
+                const svcIdx = keysa
+                    .map((key, index) => key === 'service' ? index : -1)
+                    .filter(index => index !== -1);
+                //console.log(svcIdx);
+                //const allServices = urlParams.getAll('service');
+                svcIdx.forEach(idx => {
+                    serviceCount++;
+                    var val = valsa[idx];
+                    ServicesStr += val + ";";
+
+                    // var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
+                    // if (match_row != undefined) {
+                    //     var match = match_row.Service;
+                    //     val = match ? match : val;
+                    // }
+                    // valsa[idx] = val;
+                });
+                document.getElementById('ServicesStr').value = ServicesStr;
+            }
+            //Add adjacent zip codes
+            if (keysa.includes('zip')) {
+                // get the indices that match "zip"
+                //let temp = 0
+                const zipIdx = keysa
+                    .map((key, index) => key === 'zip' ? index : -1)
+                    .filter(index => index !== -1);
+                zipIdx.forEach(idx => {
+                    zipCount++;
+                    var val = valsa[idx];
+                    document.getElementById('ZipCode').value = val;
+                    var match_row = zipData.find(item => item.ZCTA === val);
+                    if (match_row != undefined) {
+                        var zipString = match_row.adjacent;
+                        zipString.split(',').forEach(zip => {
+                            keysa.push('zip');
+                            valsa.push(zip.trim());
+                        });
                     }
                 });
+            }
+            if (keysa.includes('population')) {
+                const popIdx = keysa
+                    .map((key, index) => key === 'population' ? index : -1)
+                    .filter(index => index !== -1);
+                popIdx.forEach(idx => {
+                    //popCount++;
+                    var val = valsa[idx];
+                    document.getElementById('Population').value = val;
+                });
+            }
 
-                // 2. Trigger resolve() when completely finished building.
-                // This passes the fully populated layer group object outward.
-                resolve(partnerDataLayer);
+            // multiple zips will always be or
+            // multiple services can be and or or
+            /// most of the time, multiple services will be or
+            // there should not be multiple providers
+            // if provider is specified, then it should override other filters
+            // service + zip should always be and
+
+            console.log("Processing map filters...");
+
+            partnerDataLayer.eachLayer(function (layer) {
+                const properties = layer.feature.properties;
+                let targetKey;
+                let targetValue;
+                let matches = 0;
+                for (let i = 0; i <= keysa.length; i++) {
+                    targetKey = keysa[i];
+                    if (targetKey == 'service') { targetKey = 'services'; }
+                    const hasKey = Object.keys(properties).includes(targetKey);
+                    if (hasKey) {
+                        targetValue = valsa[i];
+                        if (targetValue.toLowerCase() == "unknown") { continue; }
+                        targetValue = decodeURIComponent(targetValue.replace(/\+/g, ' '));
+                        targetValue = cleanString(targetValue);
+                        var vals = properties[targetKey]; //vals from layer, can be array if services
+                        var safeVals = Array.isArray(vals) ? vals : [vals];
+                        safeVals.forEach(element => {
+                            var cval = element;
+                            val = cleanString(cval);
+                            if (val == targetValue) {
+                                matches++;
+                            }
+                        });
+                    }
+                }
+                if (matches >= ukeys.length) {
+                    layer.addTo(content);
+                    layer._icon.classList.add('pulsating-icon');
+                }
+            });
+
+            if (content.getLayers().length == 1) { // should only have 1 active marker
+                content.getLayers().forEach(function (layer, index) {
+                    // Check if it's a marker (icon) vs a shape (polygon/polyline)
+                    if (layer instanceof L.Marker) {
+                        layer.openPopup();
+                    } else { }
+                });
+            }
+
+            // Zoom to icon(s)
+            // Create an empty bounds container
+            const bounds = L.latLngBounds();
+            // Loop through the markers in content and extend the bounds
+            content.eachLayer(function (layer) {
+                if (typeof layer.getLatLng === 'function') {
+                    bounds.extend(layer.getLatLng());
+                } else if (typeof layer.getBounds === 'function') {
+                    bounds.extend(layer.getBounds());
+                }
+            });
+            console.log("Done processing map filters. Setting bounds...");
+            // Zoom the map to the manually calculated bounds
+            //map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+            try {
+                // Attempt to fit the map to the bounds
+                map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
+                //return true;
+            } catch (error) {
+                // Check if it's the specific error you're looking for
+                if (error.message && error.message.includes("Bounds are not valid")) {
+                    //displayNoMatchesMessage();
+                    showTimedNotice('No Matches Found!', 'Please try your search again...');
+                    return false;
+                } else {
+                    // Log any other unexpected errors to the console
+                    console.error("An unexpected map error occurred:", error);
+                    //return false;
+                }
+            }
+        }
+        //#endregion
+
+        //#region <!-- Javascript Listeners - Also process get/post here -->
+        const forceUpdate = false;
+        // Wait until DOMContentLoaded
+        document.addEventListener("DOMContentLoaded", async function () {
+
+            showLoadingNotice('Loading map data', 'Fetching locations and services…');
+
+            userIP = await getIPAddress();
+
+            // Automatically click the default open tab when the page loads
+            document.getElementById("defaultOpenB").click();
+
+            try {
+                await collectData(forceUpdate);
+                setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
+                const urlParams = new URLSearchParams(window.location.search);
+                var success = filterContentByMatch(urlParams);
+            } catch (err) {
+                console.error("Initialization failed:", err);
+            } finally {
+                //if (success === true) {
+                hideLoadingNotice();
+                //}
+            }
+        });
+        window.addEventListener('load', async (event) => {
+            console.log('The page resources (stylesheets/images) have fully loaded!');
+        });
+        //#endregion <!-- Javascript Listeners - Also process get/post here -->
+
+        //#region <!-- JS for Choropleth -->
+
+        function getColor(d) {
+            return d > 1000 ? '#800026' :
+                d > 500 ? '#BD0026' :
+                    d > 200 ? '#E31A1C' :
+                        d > 100 ? '#FC4E2A' :
+                            d > 50 ? '#FD8D3C' :
+                                d > 20 ? '#FEB24C' :
+                                    d > 10 ? '#FED976' :
+                                        '#FFEDA0';
+        }
+
+        function style(feature) {
+            return {
+                fillColor: getColor(feature.properties.density),
+                weight: 2,
+                opacity: 1,
+                color: 'white',
+                dashArray: '3',
+                fillOpacity: 0.7
+            };
+        }
+
+        function highlightFeature(e) {
+            var layer = e.target;
+
+            layer.setStyle({
+                weight: 5,
+                color: '#666',
+                dashArray: '',
+                fillOpacity: 0.7
+            });
+
+            // Gemini says this isn't necessary and causing the highlight to stick
+            //layer.bringToFront();
+
+            info.update(layer.feature.properties);
+        }
+
+        function resetHighlight(e) {
+            shapesLayer.resetStyle(e.target);
+            info.update();
+        }
+
+        var info = L.control();
+
+        info.onAdd = function (map) {
+            this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+            this.update();
+            return this._div;
+        };
+
+        // method that we will use to update the control based on feature properties passed
+        info.update = function (props) {
+            this._div.innerHTML = '<h4>OY Density</h4>' + (props ?
+                '<b>' + props.pointName + '</b><br />' + props.density + ' OY / mi<sup>2</sup>'
+                : 'Hover over a PUMA');
+        };
+
+        //#endregion
+
+        //#region <!-- Add control buttons, Add Shapes on Demand -->
+        // 1. Create the custom control
+        const clearButton = L.control({ position: 'topright' }); // Positions: 'topleft', 'topright', 'bottomleft', 'bottomright'
+        clearButton.onAdd = function (map) {
+            // Create a container div for the button
+            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+
+            // Create the actual button element
+            const button = L.DomUtil.create('a', 'custom-map-button', div);
+            button.innerHTML = 'Clear Map'; // Text or HTML icon inside the button
+            button.href = '#';
+            button.title = 'Clear all overlays';
+
+            // 2. Handle the click event
+            L.DomEvent.on(button, 'click', function (e) {
+                L.DomEvent.stopPropagation(e); // Prevents the map behind it from getting clicked
+                L.DomEvent.preventDefault(e);
+
+                // Call your reset function here!
+                uncheckAllOverlays();
+                //locations.addTo
+            });
+
+            return div;
+        };
+        // 3. Add it to your map
+        clearButton.addTo(map);
+
+        const customButton2 = L.control({ position: 'topright' }); // Positions: 'topleft', 'topright', 'bottomleft', 'bottomright'
+        customButton2.onAdd = function (map) {
+            // Create a container div for the button
+            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+
+            // Create the actual button element
+            const button = L.DomUtil.create('a', 'custom-map-button', div);
+            button.innerHTML = 'Search'; // Text or HTML icon inside the button
+            button.href = '#';
+            button.title = 'Search';
+
+            // 2. Handle the click event
+            L.DomEvent.on(button, 'click', function (e) {
+                L.DomEvent.stopPropagation(e); // Prevents the map behind it from getting clicked
+                L.DomEvent.preventDefault(e);
+
+                // Call your reset function here!
+                //document.getElementById("searchTab").click();
+                openTab(event, 'itemSearch');
+            });
+
+            return div;
+        };
+        // 3. Add it to your map
+        customButton2.addTo(map);
+
+        function loadGJSNScript(scriptName) { //TODO: only load once
+            return new Promise((resolve, reject) => {
+                // 1. If it's already loaded, don't load it again
+                //if (document.querySelector('script[src="zipShapes.js"]')) {
+                if (document.querySelector(`script[src="${scriptName}"]`)) {
+                    resolve();
+                    return;
+                }
+
+                // 2. Create the script element dynamically
+                const script = document.createElement('script');
+                //script.src = 'zipShapes.js';
+                script.src = scriptName;
+                script.type = 'text/javascript';
+
+                // 3. Setup resolve on success, reject on error
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error('Failed to load ->', scriptName));
+
+                // 4. Inject it into the page
+                document.head.appendChild(script);
+                console.log("GJSN Data should be available...")
+            });
+        }
+
+        async function handleZipDownload() {
+            try {
+                console.log("Loading zip library...");
+                await loadGJSNScript('zipShapes.js');
+
+                // zipShapes.js is now fully loaded and available!
+                console.log("Library loaded successfully. Initializing zip process...");
 
             } catch (error) {
-                // If anything inside the loop crashes, reject the promise with the error description
-                reject(error);
+                console.error("Error running zip logic:", error);
             }
-        });
-
-        if (partnerDataLayer.getBounds().isValid()) {
-            map.fitBounds(partnerDataLayer.getBounds());
-        } else {
-            console.log("NO MATCHES FOUND!")
         }
 
-        //console.log("Constructed GeoJSON Object:", partnerDataGJSN);
-        //console.log("Constructed partnerDataGJSN:");
-
-    }
-
-    //#endregion
-
-    //#region <!-- Functions to dynamically change layers
-
-    async function filterContentByMatch(urlParams) {
-
-        const keysa = [...urlParams.keys()];
-        const valsa = [...urlParams.values()];
-        const ukeys = [...new Set(keysa)];
-
-        if (keysa.length === 0) { return; }
-
-        content.clearLayers();
-
-        var zipCount = 0;
-        var serviceCount = 0;
-
-        //lets convert abbreviated services to full services
-        if (keysa.includes('service')) {
-            // get the indices that match "service"
-            let temp = 0
-            var ServicesStr = ""
-            const svcIdx = keysa
-                .map((key, index) => key === 'service' ? index : -1)
-                .filter(index => index !== -1);
-            //console.log(svcIdx);
-            //const allServices = urlParams.getAll('service');
-            svcIdx.forEach(idx => {
-                serviceCount++;
-                var val = valsa[idx];
-                ServicesStr += val + ";";
-
-                // var match_row = serviceDataJSN.find(item => item.Abbreviation === val);
-                // if (match_row != undefined) {
-                //     var match = match_row.Service;
-                //     val = match ? match : val;
-                // }
-                // valsa[idx] = val;
-            });
-            document.getElementById('ServicesStr').value = ServicesStr;
-        }
-        //Add adjacent zip codes
-        if (keysa.includes('zip')) {
-            // get the indices that match "zip"
-            //let temp = 0
-            const zipIdx = keysa
-                .map((key, index) => key === 'zip' ? index : -1)
-                .filter(index => index !== -1);
-            zipIdx.forEach(idx => {
-                zipCount++;
-                var val = valsa[idx];
-                document.getElementById('ZipCode').value = val;
-                var match_row = zipData.find(item => item.ZCTA === val);
-                if (match_row != undefined) {
-                    var zipString = match_row.adjacent;
-                    zipString.split(',').forEach(zip => {
-                        keysa.push('zip');
-                        valsa.push(zip.trim());
-                    });
+        //function addZipData() { //Can't be unchecked
+        async function addGJSNData(layerName) {
+            // Your zipShapes.js logic goes here:
+            // const zip = new ZipArchive(); 
+            //zipsLG.clearLayers();
+            shapesLG.clearLayers();
+            // if (layerName == "zips") {
+            //     await loadGJSNScript("zipShapes.js");
+            //     zipsLayer = L.geoJSON(zipShapes, {}).addTo(shapes);
+            // }
+            // if (layerName == "pumas") {
+            //     await loadGJSNScript("zipShapes.js");
+            //     zipsLayer = L.geoJSON(zipShapes, {}).addTo(shapes);
+            // }
+            //zipsLayer = L.geoJSON(zipShapes, {}).addTo(zipsLG);
+            //zipsLayer.addTo(map);
+            if (layerName == "Show Zip Codes") {
+                if (zipShapes === null || zipShapes === undefined) {
+                    // We need to load zipData by default
+                    //zipData = await loadCSVData('zipData.csv');
+                    //var scriptName = layerName.toLowerCase() + ".js";
+                    //await loadGJSNScript(scriptName);
+                    await loadGJSNScript('zipShapes.js');
                 }
-            });
-        }
-        if (keysa.includes('population')) {
-            const popIdx = keysa
-                .map((key, index) => key === 'population' ? index : -1)
-                .filter(index => index !== -1);
-            popIdx.forEach(idx => {
-                //popCount++;
-                var val = valsa[idx];
-                document.getElementById('Population').value = val;
-            });
-        }
 
-        // multiple zips will always be or
-        // multiple services can be and or or
-        /// most of the time, multiple services will be or
-        // there should not be multiple providers
-        // if provider is specified, then it should override other filters
-        // service + zip should always be and
-
-        console.log("Processing map filters...");
-
-        partnerDataLayer.eachLayer(function (layer) {
-            const properties = layer.feature.properties;
-            let targetKey;
-            let targetValue;
-            let matches = 0;
-            for (let i = 0; i <= keysa.length; i++) {
-                targetKey = keysa[i];
-                if (targetKey == 'service') { targetKey = 'services'; }
-                const hasKey = Object.keys(properties).includes(targetKey);
-                if (hasKey) {
-                    targetValue = valsa[i];
-                    if (targetValue.toLowerCase() == "unknown") { continue; }
-                    targetValue = decodeURIComponent(targetValue.replace(/\+/g, ' '));
-                    targetValue = cleanString(targetValue);
-                    var vals = properties[targetKey]; //vals from layer, can be array if services
-                    var safeVals = Array.isArray(vals) ? vals : [vals];
-                    safeVals.forEach(element => {
-                        var cval = element;
-                        val = cleanString(cval);
-                        if (val == targetValue) {
-                            matches++;
-                        }
-                    });
+                shapesLayer = L.geoJSON(zipShapes, {
+                    style: style,
+                    onEachFeature: onEachFeatureShapes
+                }).addTo(shapesLG);
+            }
+            if (layerName == "Show PUMAs") {
+                if (pumaShapes === null || pumaShapes === undefined) {
+                    //var scriptName = layerName.toLowerCase() + ".js";
+                    //await loadGJSNScript(scriptName);
+                    //pumaData = await loadCSVData('pumaNames.csv');
+                    //await loadGJSNScript('pumas.js');
+                    await loadGJSNScript('pumaShapesE.js');
                 }
+                //shapesLayer = L.geoJSON(pumaShapes, {}).addTo(shapesLG);
+                shapesLayer = L.geoJSON(pumaShapes, {
+                    //style(feature) {
+                    //    return feature.properties && feature.properties.style;
+                    //},
+                    style: style,
+                    onEachFeature: onEachFeatureShapes // Explicitly map your custom function to Leaflet's option key:
+                }).addTo(shapesLG);
             }
-            if (matches >= ukeys.length) {
-                layer.addTo(content);
-                layer._icon.classList.add('pulsating-icon');
-            }
-        });
-
-        if (content.getLayers().length == 1) { // should only have 1 active marker
-            content.getLayers().forEach(function (layer, index) {
-                // Check if it's a marker (icon) vs a shape (polygon/polyline)
-                if (layer instanceof L.Marker) {
-                    layer.openPopup();
-                } else { }
-            });
+            shapesLG.addTo(map);
         }
 
-        // Zoom to icon(s)
-        // Create an empty bounds container
-        const bounds = L.latLngBounds();
-        // Loop through the markers in content and extend the bounds
-        content.eachLayer(function (layer) {
-            if (typeof layer.getLatLng === 'function') {
-                bounds.extend(layer.getLatLng());
-            } else if (typeof layer.getBounds === 'function') {
-                bounds.extend(layer.getBounds());
-            }
-        });
-        console.log("Done processing map filters. Setting bounds...");
-        // Zoom the map to the manually calculated bounds
-        //map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
-        try {
-            // Attempt to fit the map to the bounds
-            map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
-            //return true;
-        } catch (error) {
-            // Check if it's the specific error you're looking for
-            if (error.message && error.message.includes("Bounds are not valid")) {
-                //displayNoMatchesMessage();
-                showTimedNotice('No Matches Found!', 'Please try your search again...');
-                return false;
-            } else {
-                // Log any other unexpected errors to the console
-                console.error("An unexpected map error occurred:", error);
-                //return false;
-            }
-        }
-    }
-    //#endregion
+        //#endregion
 
-    //#region <!-- Javascript Listeners - Also process get/post here -->
-    const forceUpdate = false;
-    // Wait until DOMContentLoaded
-    document.addEventListener("DOMContentLoaded", async function () {
-
-        showLoadingNotice('Loading map data', 'Fetching locations and services…');
-
-        userIP = await getIPAddress();
-
-        // Automatically click the default open tab when the page loads
-        document.getElementById("defaultOpenB").click();
-
-        try {
-            await collectData(forceUpdate);
-            setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
-            const urlParams = new URLSearchParams(window.location.search);
-            var success = filterContentByMatch(urlParams);
-        } catch (err) {
-            console.error("Initialization failed:", err);
-        } finally {
-            //if (success === true) {
-            hideLoadingNotice();
-            //}
-        }
-    });
-    window.addEventListener('load', async (event) => {
-        console.log('The page resources (stylesheets/images) have fully loaded!');
-    });
-    //#endregion <!-- Javascript Listeners - Also process get/post here -->
-
-    //#region <!-- JS for Choropleth -->
-
-    function getColor(d) {
-        return d > 1000 ? '#800026' :
-            d > 500 ? '#BD0026' :
-                d > 200 ? '#E31A1C' :
-                    d > 100 ? '#FC4E2A' :
-                        d > 50 ? '#FD8D3C' :
-                            d > 20 ? '#FEB24C' :
-                                d > 10 ? '#FED976' :
-                                    '#FFEDA0';
-    }
-
-    function style(feature) {
-        return {
-            fillColor: getColor(feature.properties.density),
-            weight: 2,
-            opacity: 1,
-            color: 'white',
-            dashArray: '3',
-            fillOpacity: 0.7
-        };
-    }
-
-    function highlightFeature(e) {
-        var layer = e.target;
-
-        layer.setStyle({
-            weight: 5,
-            color: '#666',
-            dashArray: '',
-            fillOpacity: 0.7
-        });
-
-        // Gemini says this isn't necessary and causing the highlight to stick
-        //layer.bringToFront();
-
-        info.update(layer.feature.properties);
-    }
-
-    function resetHighlight(e) {
-        shapesLayer.resetStyle(e.target);
-        info.update();
-    }
-
-    var info = L.control();
-
-    info.onAdd = function (map) {
-        this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
-        this.update();
-        return this._div;
-    };
-
-    // method that we will use to update the control based on feature properties passed
-    info.update = function (props) {
-        this._div.innerHTML = '<h4>OY Density</h4>' + (props ?
-            '<b>' + props.pointName + '</b><br />' + props.density + ' OY / mi<sup>2</sup>'
-            : 'Hover over a PUMA');
-    };
-
-    //#endregion
-
-    //#region <!-- Add control buttons, Add Shapes on Demand -->
-    // 1. Create the custom control
-    const clearButton = L.control({ position: 'topright' }); // Positions: 'topleft', 'topright', 'bottomleft', 'bottomright'
-    clearButton.onAdd = function (map) {
-        // Create a container div for the button
-        const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-
-        // Create the actual button element
-        const button = L.DomUtil.create('a', 'custom-map-button', div);
-        button.innerHTML = 'Clear Map'; // Text or HTML icon inside the button
-        button.href = '#';
-        button.title = 'Clear all overlays';
-
-        // 2. Handle the click event
-        L.DomEvent.on(button, 'click', function (e) {
-            L.DomEvent.stopPropagation(e); // Prevents the map behind it from getting clicked
-            L.DomEvent.preventDefault(e);
-
-            // Call your reset function here!
-            uncheckAllOverlays();
-            //locations.addTo
-        });
-
-        return div;
-    };
-    // 3. Add it to your map
-    clearButton.addTo(map);
-
-    const customButton2 = L.control({ position: 'topright' }); // Positions: 'topleft', 'topright', 'bottomleft', 'bottomright'
-    customButton2.onAdd = function (map) {
-        // Create a container div for the button
-        const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-
-        // Create the actual button element
-        const button = L.DomUtil.create('a', 'custom-map-button', div);
-        button.innerHTML = 'Search'; // Text or HTML icon inside the button
-        button.href = '#';
-        button.title = 'Search';
-
-        // 2. Handle the click event
-        L.DomEvent.on(button, 'click', function (e) {
-            L.DomEvent.stopPropagation(e); // Prevents the map behind it from getting clicked
-            L.DomEvent.preventDefault(e);
-
-            // Call your reset function here!
-            //document.getElementById("searchTab").click();
-            openTab(event, 'itemSearch');
-        });
-
-        return div;
-    };
-    // 3. Add it to your map
-    customButton2.addTo(map);
-
-    function loadGJSNScript(scriptName) { //TODO: only load once
-        return new Promise((resolve, reject) => {
-            // 1. If it's already loaded, don't load it again
-            //if (document.querySelector('script[src="zipShapes.js"]')) {
-            if (document.querySelector(`script[src="${scriptName}"]`)) {
-                resolve();
-                return;
-            }
-
-            // 2. Create the script element dynamically
-            const script = document.createElement('script');
-            //script.src = 'zipShapes.js';
-            script.src = scriptName;
-            script.type = 'text/javascript';
-
-            // 3. Setup resolve on success, reject on error
-            script.onload = () => resolve();
-            script.onerror = () => reject(new Error('Failed to load ->', scriptName));
-
-            // 4. Inject it into the page
-            document.head.appendChild(script);
-            console.log("GJSN Data should be available...")
-        });
-    }
-
-    async function handleZipDownload() {
-        try {
-            console.log("Loading zip library...");
-            await loadGJSNScript('zipShapes.js');
-
-            // zipShapes.js is now fully loaded and available!
-            console.log("Library loaded successfully. Initializing zip process...");
-
-        } catch (error) {
-            console.error("Error running zip logic:", error);
-        }
-    }
-
-    //function addZipData() { //Can't be unchecked
-    async function addGJSNData(layerName) {
-        // Your zipShapes.js logic goes here:
-        // const zip = new ZipArchive(); 
-        //zipsLG.clearLayers();
-        shapesLG.clearLayers();
-        // if (layerName == "zips") {
-        //     await loadGJSNScript("zipShapes.js");
-        //     zipsLayer = L.geoJSON(zipShapes, {}).addTo(shapes);
-        // }
-        // if (layerName == "pumas") {
-        //     await loadGJSNScript("zipShapes.js");
-        //     zipsLayer = L.geoJSON(zipShapes, {}).addTo(shapes);
-        // }
-        //zipsLayer = L.geoJSON(zipShapes, {}).addTo(zipsLG);
-        //zipsLayer.addTo(map);
-        if (layerName == "Show Zip Codes") {
-            if (zipShapes === null || zipShapes === undefined) {
-                // We need to load zipData by default
-                //zipData = await loadCSVData('zipData.csv');
-                //var scriptName = layerName.toLowerCase() + ".js";
-                //await loadGJSNScript(scriptName);
-                await loadGJSNScript('zipShapes.js');
-            }
-
-            shapesLayer = L.geoJSON(zipShapes, {
-                style: style,
-                onEachFeature: onEachFeatureShapes
-            }).addTo(shapesLG);
-        }
-        if (layerName == "Show PUMAs") {
-            if (pumaShapes === null || pumaShapes === undefined) {
-                //var scriptName = layerName.toLowerCase() + ".js";
-                //await loadGJSNScript(scriptName);
-                //pumaData = await loadCSVData('pumaNames.csv');
-                //await loadGJSNScript('pumas.js');
-                await loadGJSNScript('pumaShapesE.js');
-            }
-            //shapesLayer = L.geoJSON(pumaShapes, {}).addTo(shapesLG);
-            shapesLayer = L.geoJSON(pumaShapes, {
-                //style(feature) {
-                //    return feature.properties && feature.properties.style;
-                //},
-                style: style,
-                onEachFeature: onEachFeatureShapes // Explicitly map your custom function to Leaflet's option key:
-            }).addTo(shapesLG);
-        }
-        shapesLG.addTo(map);
-    }
-
-    //#endregion
-
-</script>
+    </script>
 
 </body>
 

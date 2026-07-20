@@ -1335,6 +1335,29 @@
 
             if (keysa.length === 0) { return; }
 
+            //check population before clearing layers
+            if (keysa.includes('population')) {
+                const popIdx = keysa
+                    .map((key, index) => key === 'population' ? index : -1)
+                    .filter(index => index !== -1);
+
+                // Loop backwards through the matching indices so removing elements 
+                // doesn't mess up the index alignment for the remaining steps.
+                for (let i = popIdx.length - 1; i >= 0; i--) {
+                    const idx = popIdx[i];
+                    var val = valsa[idx];
+
+                    if (val === 'unknown') {
+                        // Remove 1 element at the current index from both arrays
+                        keysa.splice(idx, 1);
+                        valsa.splice(idx, 1);
+                    } else {
+                        document.getElementById('Population').value = val;
+                    }
+                }
+            }
+            if (keysa.length === 0) { return; }
+
             content.clearLayers();
 
             var zipCount = 0;
@@ -1383,16 +1406,6 @@
                             valsa.push(zip.trim());
                         });
                     }
-                });
-            }
-            if (keysa.includes('population')) {
-                const popIdx = keysa
-                    .map((key, index) => key === 'population' ? index : -1)
-                    .filter(index => index !== -1);
-                popIdx.forEach(idx => {
-                    //popCount++;
-                    var val = valsa[idx];
-                    document.getElementById('Population').value = val;
                 });
             }
 
@@ -1494,7 +1507,7 @@
                 await collectData(forceUpdate);
                 setLoadingNoticeMessage('Preparing your view', 'Applying selections…');
                 const urlParams = new URLSearchParams(window.location.search);
-                var success = filterContentByMatch(urlParams);
+                filterContentByMatch(urlParams);
             } catch (err) {
                 console.error("Initialization failed:", err);
             } finally {
